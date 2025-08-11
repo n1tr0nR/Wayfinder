@@ -1,0 +1,49 @@
+{
+	"schemaVersion": 1,
+	"id": "wayfinder",
+	"version": "${version}",
+	"name": "Wayfinder",
+	"description": "This is an example description! Tell everyone what your mod is about!",
+	"authors": [
+		"Me!"
+	],
+	"contact": {
+		"homepage": "https://fabricmc.net/",
+		"sources": "https://github.com/FabricMC/fabric-example-mod"
+	},
+	"license": "CC0-1.0",
+	"icon": "assets/wayfinder/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"dev.nitron.wayfinder.Wayfinder"
+		],
+		"client": [
+			"dev.nitron.wayfinder.WayfinderClient"
+		],
+		"cardinal-components": [
+			"dev.nitron.wayfinder.registries.WayfinderComponents"
+		],
+		"fabric-datagen": [
+			"dev.nitron.wayfinder.WayfinderDataGenerator"
+		]
+	},
+	"mixins": [
+		"wayfinder.mixins.json"
+	],
+	"custom": {
+		"cardinal-components": [
+			"wayfinder:wayfinder",
+			"wayfinder:wayfinder_w"
+		]
+	},
+	"depends": {
+		"fabricloader": ">=0.17.2",
+		"minecraft": "~1.21.1",
+		"java": ">=21",
+		"fabric-api": "*"
+	},
+	"suggests": {
+		"another-mod": "*"
+	}
+}

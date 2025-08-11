@@ -1,0 +1,13 @@
+{
+  "default_signal": {
+    "sounds": [
+      "wayfinder:signals/default_signal"
+    ]
+  },
+  "signalscope": {
+    "sounds": [
+      "wayfinder:signalscope"
+    ],
+    "subtitle": "sounds.wayfinder.signalscope"
+  }
+}
