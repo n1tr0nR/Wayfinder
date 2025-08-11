@@ -4,6 +4,21 @@
       "wayfinder:signals/default_signal"
     ]
   },
+  "alt_signal_1": {
+    "sounds": [
+      "wayfinder:signals/alt_signal_1"
+    ]
+  },
+  "alt_signal_2": {
+    "sounds": [
+      "wayfinder:signals/alt_signal_2"
+    ]
+  },
+  "alt_signal_3": {
+    "sounds": [
+      "wayfinder:signals/alt_signal_3"
+    ]
+  },
   "signalscope": {
     "sounds": [
       "wayfinder:signalscope"

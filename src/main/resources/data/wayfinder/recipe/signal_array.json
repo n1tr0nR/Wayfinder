@@ -1,0 +1,26 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "pattern": [
+        " # ",
+        "gNg",
+        "gRg"
+    ],
+    "key": {
+        "#": {
+            "item": "minecraft:calibrated_sculk_sensor"
+        },
+        "g": {
+            "item": "minecraft:gold_ingot"
+        },
+        "N": {
+            "item": "minecraft:note_block"
+        },
+        "R": {
+            "item": "minecraft:redstone"
+        }
+    },
+    "result": {
+        "id": "wayfinder:signal_array",
+        "count": 1
+    }
+}

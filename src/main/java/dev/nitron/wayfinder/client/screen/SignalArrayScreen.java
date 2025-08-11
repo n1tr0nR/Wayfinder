@@ -2,6 +2,7 @@ package dev.nitron.wayfinder.client.screen;
 
 import dev.nitron.wayfinder.Wayfinder;
 import dev.nitron.wayfinder.block_entity.SignalArrayBlockEntity;
+import dev.nitron.wayfinder.client.screen.widgets.TransparentButtonWidget;
 import dev.nitron.wayfinder.networking.c2s.SignalArrayC2SPayload;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.gui.DrawContext;
@@ -14,6 +15,8 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Vec3i;
 
+import java.awt.*;
+
 public class SignalArrayScreen extends Screen {
     private final SignalArrayBlockEntity blockEntity;
 
@@ -21,6 +24,8 @@ public class SignalArrayScreen extends Screen {
     private TextFieldWidget redWidget;
     private TextFieldWidget greenWidget;
     private TextFieldWidget blueWidget;
+    private TransparentButtonWidget buttonWidget;
+    private TextWidget typeField;
 
     public SignalArrayScreen(SignalArrayBlockEntity entity) {
         this(Text.literal("Signal Array"), entity);
@@ -63,6 +68,11 @@ public class SignalArrayScreen extends Screen {
 
         this.addDrawableChild(ButtonWidget.builder(ScreenTexts.DONE, (button) -> this.finishEditing()).dimensions(x - 50, y + 40, 100, 20).build());
 
+        this.buttonWidget = (TransparentButtonWidget) TransparentButtonWidget.transparentBuilder(ScreenTexts.SPACE, (button) -> this.cycleType()).dimensions(x - 77, y - 13, 43, 34).build();
+        this.addDrawableChild(buttonWidget);
+
+        typeField = new TextWidget(x - 65, y - 5, 20, 20, Text.literal(String.valueOf(blockEntity.type)), client.textRenderer);
+        this.addDrawableChild(typeField);
 
         x += 2;
         y += 5;
@@ -94,24 +104,35 @@ public class SignalArrayScreen extends Screen {
 
     }
 
+    private void cycleType() {
+        int value = Integer.parseInt(this.typeField.getMessage().getString());
+        value++;
+        if (value > 3){
+            value = 0;
+        }
+        this.typeField.setMessage(Text.literal(String.valueOf(value)));
+    }
+
     @Override
     public void removed() {
+        int value = Integer.parseInt(this.typeField.getMessage().getString());
         super.removed();
         Vec3i intFromValues = new Vec3i(
                 parseIntSafe(this.redWidget.getText(), 255),
                 parseIntSafe(this.greenWidget.getText(), 255),
                 parseIntSafe(this.blueWidget.getText(), 255)
         );
-        SignalArrayC2SPayload.send(this.nameWidget.getText(), intFromValues, this.blockEntity.getPos());
+        SignalArrayC2SPayload.send(this.nameWidget.getText(), intFromValues, this.blockEntity.getPos(), value);
     }
 
     private void finishEditing() {
+        int value = Integer.parseInt(this.typeField.getMessage().getString());
         Vec3i intFromValues = new Vec3i(
                 parseIntSafe(this.redWidget.getText(), 255),
                 parseIntSafe(this.greenWidget.getText(), 255),
                 parseIntSafe(this.blueWidget.getText(), 255)
         );
-        SignalArrayC2SPayload.send(this.nameWidget.getText(), intFromValues, this.blockEntity.getPos());
+        SignalArrayC2SPayload.send(this.nameWidget.getText(), intFromValues, this.blockEntity.getPos(), value);
 
         this.client.setScreen(null);
     }

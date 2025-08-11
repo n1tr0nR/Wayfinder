@@ -17,16 +17,19 @@ import org.jetbrains.annotations.Nullable;
 public class SignalArrayBlockEntity extends BlockEntity {
     public String name;
     public Vec3i color;
+    public int type;
 
     public SignalArrayBlockEntity(BlockPos pos, BlockState state) {
         super(WayfinderBlocks.SIGNAL_ARRAY_BE, pos, state);
         this.name = "Signal";
         this.color = new Vec3i(76, 255, 135);
+        this.type = 0;
     }
 
-    public void update(String name, Vec3i color){
+    public void update(String name, Vec3i color, int type){
         this.name = name;
         this.color = color;
+        this.type = type;
         if (this.world != null) {
             this.markDirty();
             this.world.updateListeners(this.pos, this.getCachedState(), this.getCachedState(), Block.NOTIFY_ALL);
@@ -40,6 +43,7 @@ public class SignalArrayBlockEntity extends BlockEntity {
         nbt.putInt("red", this.color.getX());
         nbt.putInt("green", this.color.getY());
         nbt.putInt("blue", this.color.getZ());
+        nbt.putInt("type", this.type);
     }
 
     @Override
@@ -47,6 +51,7 @@ public class SignalArrayBlockEntity extends BlockEntity {
         super.readNbt(nbt, registryLookup);
         this.name = nbt.getString("name");
         this.color = new Vec3i(nbt.getInt("red"), nbt.getInt("green"), nbt.getInt("blue"));
+        this.type = nbt.getInt("type");
     }
 
     @Override

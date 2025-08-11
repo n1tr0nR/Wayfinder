@@ -1,25 +1,20 @@
 package dev.nitron.wayfinder.client.sound;
 
-import dev.nitron.wayfinder.item.SignalscopeItem;
+import dev.nitron.wayfinder.Wayfinder;
 import dev.nitron.wayfinder.registries.WayfinderComponents;
 import dev.nitron.wayfinder.registries.WayfinderSounds;
-import dev.nitron.wayfinder.util.SignalscopeHelper;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.sound.MovingSoundInstance;
 import net.minecraft.client.sound.SoundInstance;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvent;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.random.Random;
 
-public class SignalSoundInstance extends MovingSoundInstance {
+public class Signal1SoundInstance extends MovingSoundInstance {
     private final ClientPlayerEntity player;
 
-    public SignalSoundInstance(ClientPlayerEntity player) {
-        super(WayfinderSounds.DEFAULT_SIGNAL, SoundCategory.PLAYERS, SoundInstance.createRandom());
+    public Signal1SoundInstance(ClientPlayerEntity player) {
+        super(WayfinderSounds.ALT_SIGNAL_1, SoundCategory.PLAYERS, SoundInstance.createRandom());
         this.player = player;
         this.repeat = true;
         this.repeatDelay = 0;
@@ -34,12 +29,12 @@ public class SignalSoundInstance extends MovingSoundInstance {
     @Override
     public void tick() {
         if (shouldPlay(this.player)){
-            float raw = WayfinderComponents.WAYFINDER.get(player).getLookFactor();
-
-            if (raw < 0.25F){
+            float raw = WayfinderComponents.WAYFINDER.get(player).getFactor1();
+            Wayfinder.LOGGER.info("fuck you " + raw);
+            if (raw < 0.9F){
                 this.volume = 0;
             } else {
-                this.volume = MathHelper.lerp((raw - 0.25F) / 0.75F, 0F, 1F) * WayfinderComponents.WAYFINDER.get(this.player).getSIgnalscopeVol(MinecraftClient.getInstance().getRenderTickCounter().getTickDelta(false));
+                this.volume = MathHelper.lerp((raw - 0.9F) / 0.1F, 0F, 1F) * WayfinderComponents.WAYFINDER.get(this.player).getSIgnalscopeVol(MinecraftClient.getInstance().getRenderTickCounter().getTickDelta(false));
             }
         } else {
             this.setDone();

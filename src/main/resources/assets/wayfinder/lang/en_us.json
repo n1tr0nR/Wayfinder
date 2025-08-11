@@ -1,5 +1,7 @@
 {
   "item.wayfinder.signalscope": "Signalscope",
 
+  "block.wayfinder.signal_array": "Signal Array",
+
   "sounds.wayfinder.signalscope": "Signalscope scans"
 }

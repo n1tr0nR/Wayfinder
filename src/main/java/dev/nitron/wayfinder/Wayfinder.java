@@ -1,5 +1,6 @@
 package dev.nitron.wayfinder;
 
+import com.nitron.nitrogen.Nitrogen;
 import dev.nitron.wayfinder.networking.c2s.SignalArrayC2SPayload;
 import dev.nitron.wayfinder.registries.WayfinderBlocks;
 import dev.nitron.wayfinder.registries.WayfinderItems;
@@ -21,6 +22,8 @@ public class Wayfinder implements ModInitializer {
 		WayfinderItems.init();
 		WayfinderBlocks.init();
 		WayfinderSounds.init();
+
+		Nitrogen.registerNitronMod(MOD_ID);
 
 		PayloadTypeRegistry.playC2S().register(SignalArrayC2SPayload.ID, SignalArrayC2SPayload.CODEC);
 		ServerPlayNetworking.registerGlobalReceiver(SignalArrayC2SPayload.ID, new SignalArrayC2SPayload.Receiver());

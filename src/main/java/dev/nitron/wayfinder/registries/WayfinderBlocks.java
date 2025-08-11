@@ -21,7 +21,7 @@ public class WayfinderBlocks{
                 BlockEntityType.Builder.create(SignalArrayBlockEntity::new, SIGNAL_ARRAY).build());
     }
 
-    public static final Block SIGNAL_ARRAY = registerBlock("signal_array", new SignalArrayBlock(AbstractBlock.Settings.copy(Blocks.CRAFTER)));
+    public static final Block SIGNAL_ARRAY = registerBlock("signal_array", new SignalArrayBlock(AbstractBlock.Settings.copy(Blocks.CRAFTER).nonOpaque()));
 
     public static Block registerBlock(String name, Block block){
         Registry.register(Registries.ITEM, Identifier.of(Wayfinder.MOD_ID, name), new BlockItem(block, new Item.Settings()));
