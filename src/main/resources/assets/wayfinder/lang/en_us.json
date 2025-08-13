@@ -1,7 +1,15 @@
 {
   "item.wayfinder.signalscope": "Signalscope",
+  "item.wayfinder.concave_lens": "Concave Lens",
+  "item.wayfinder.privacy_lens": "Privacy Lens",
 
   "block.wayfinder.signal_array": "Signal Array",
 
-  "sounds.wayfinder.signalscope": "Signalscope scans"
+  "sounds.wayfinder.signalscope": "Signalscope scans",
+  "sounds.wayfinder.take_lens": "Lens disconnects",
+  "sounds.wayfinder.place_lens": "Lens connects",
+
+  "advancement.wayfinder.a_plus_hearing": "Use a Signalscope",
+  "advancement.wayfinder.personal_vpn": "Create a private Signal Network",
+  "advancement.wayfinder.let_the_choir_sing": "Listen to all 4 different Signal types at the same time"
 }

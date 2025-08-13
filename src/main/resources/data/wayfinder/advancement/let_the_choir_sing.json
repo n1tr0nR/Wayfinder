@@ -1,0 +1,24 @@
+{
+  "parent": "wayfinder:a_plus_hearing",
+  "display": {
+    "description": {
+      "color": "#ffe4a4",
+      "translate": "advancement.wayfinder.let_the_choir_sing"
+    },
+    "icon": {
+      "count": 1,
+      "id": "wayfinder:signal_array"
+    },
+    "title": "Let The Choir Sing",
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "incode": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "sends_telemetry_event": true
+}

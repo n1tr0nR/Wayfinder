@@ -2,13 +2,17 @@ package dev.nitron.wayfinder.client.render.hud;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import dev.nitron.wayfinder.Wayfinder;
+import dev.nitron.wayfinder.block.SignalArrayBlock;
 import dev.nitron.wayfinder.block_entity.SignalArrayBlockEntity;
 import dev.nitron.wayfinder.cca.WayfinderWorldComponent;
 import dev.nitron.wayfinder.item.SignalscopeItem;
 import dev.nitron.wayfinder.registries.WayfinderComponents;
+import dev.nitron.wayfinder.registries.WayfinderDataComponents;
+import dev.nitron.wayfinder.registries.WayfinderItems;
 import dev.nitron.wayfinder.util.SignalscopeHelper;
 import dev.nitron.wayfinder.util.ZoomHandler;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
@@ -50,8 +54,22 @@ public class SignalscopeHud implements HudRenderCallback {
         RenderSystem.enableBlend();
 
         WayfinderWorldComponent comp = WayfinderComponents.WAYFINDER_W.get(client.world);
-        BlockPos lookedAtSignal = SignalscopeHelper.getLookedAtSignal(client.player, comp.getSignalPositions(), 15.0F, 1000F);
-        for (BlockPos signalPos : comp.getSignalPositions()) {
+        boolean concave = client.player.getActiveItem().get(WayfinderDataComponents.SIGNALSCOPE_COMPONENT_COMPONENT_TYPE).item().isOf(WayfinderItems.CONCAVE_LENS);
+        boolean privacy = client.player.getActiveItem().get(WayfinderDataComponents.SIGNALSCOPE_COMPONENT_COMPONENT_TYPE).item().isOf(WayfinderItems.PRIVACY_LENS);
+        BlockPos lookedAtSignal = SignalscopeHelper.getLookedAtSignal(client.player, comp.getSignalPositions(), 15.65F, concave ? 3000F : 1000F, privacy);
+
+        WayfinderWorldComponent.SignalData signal = comp.getSignalPositions().stream()
+                .filter(signalData -> signalData.pos.equals(lookedAtSignal))
+                .findFirst()
+                .orElse(null);
+
+        for (WayfinderWorldComponent.SignalData signals : comp.getSignalPositions()) {
+            BlockPos signalPos = signals.pos;
+
+            if (client.world.getBlockState(signalPos).contains(SignalArrayBlock.POWERED) && client.world.getBlockState(signalPos).get(SignalArrayBlock.POWERED) && !client.player.getUuidAsString().equals(signals.ownerUUID)) continue;
+
+            if (privacy && !client.player.getUuidAsString().equals(signals.ownerUUID)) continue;
+
             float factor = (float) (1.0 - SignalscopeHelper.getLookFactor(
                     client.player,
                     signalPos,
@@ -64,19 +82,32 @@ public class SignalscopeHud implements HudRenderCallback {
             Vec3d targetColor = new Vec3d(1.0F, 1.0F, 1.0F);
             if (factor == 0) {
                 targetColor = new Vec3d(0.3F, 1.0F, 0.6F);
-                if (lookedAtSignal != null){
-                    BlockEntity blockEntity = client.world.getBlockEntity(lookedAtSignal);
-
-                    if (blockEntity instanceof SignalArrayBlockEntity signalArrayBlockEntity){
-                        targetColor = new Vec3d((double) signalArrayBlockEntity.color.getX() / 255, (double) signalArrayBlockEntity.color.getY() / 255, (double) signalArrayBlockEntity.color.getZ() / 255);
-                    }
+                if (signal != null){
+                    targetColor = new Vec3d((double) signal.color.getX() / 255, (double) signal.color.getY() / 255, (double) signal.color.getZ() / 255);
                 }
             }
             if (factor > 0.66) {
                 targetColor = new Vec3d(1.0F, 0.0F, 0.25F);
             }
 
-            RenderSystem.setShaderColor((float) targetColor.x, (float) targetColor.y, (float) targetColor.z, 1.0F - factor);
+            double distanceToSignal = client.player.getPos().distanceTo(Vec3d.ofCenter(signalPos));
+
+            float fadeFactor = 1.0f;
+            float fadeStart = concave ? 2900F : 900f;
+            float fadeEnd = concave ? 3000F : 1000F;
+
+            if (distanceToSignal > fadeStart) {
+                if (distanceToSignal >= fadeEnd) {
+                    fadeFactor = 0f;
+                } else {
+                    fadeFactor = 1.0f - (float)((distanceToSignal - fadeStart) / (fadeEnd - fadeStart));
+                }
+            }
+
+            float alpha1 = 1.0F - factor;
+            alpha1 *= fadeFactor;
+
+            RenderSystem.setShaderColor((float) targetColor.x, (float) targetColor.y, (float) targetColor.z, alpha1);
 
             Identifier targetLeftTexture;
             if (factor > 0.66) {
@@ -120,28 +151,44 @@ public class SignalscopeHud implements HudRenderCallback {
 
 
 
-        if (lookedAtSignal != null){
-            BlockEntity blockEntity = client.world.getBlockEntity(lookedAtSignal);
-            double distance = client.player.getPos().distanceTo(Vec3d.ofCenter(lookedAtSignal));
+        if (signal != null){
+            BlockState blockState = client.world.getBlockState(signal.pos);
+
+            double distance = client.player.getPos().distanceTo(Vec3d.ofCenter(signal.pos));
             Text text = Text.literal("Signal: " + String.format("%.0f", distance) + "m").formatted(Formatting.BOLD);
             int color = 0xFF4cff99;
 
-            if (blockEntity instanceof SignalArrayBlockEntity signalArrayBlockEntity){
-                text = Text.literal(signalArrayBlockEntity.name + ": " + String.format("%.0f", distance) + "m").formatted(Formatting.BOLD);
-                Vec3i vec3i = signalArrayBlockEntity.color;
-                int r  = vec3i.getX();
-                int g  = vec3i.getY();
-                int b  = vec3i.getZ();
-                int a = 255;
+            if (blockState.contains(SignalArrayBlock.POWERED) && client.world.getBlockState(lookedAtSignal).get(SignalArrayBlock.POWERED) && !client.player.getUuidAsString().equals(signal.ownerUUID)) return;
+            if (privacy && !client.player.getUuidAsString().equals(signal.ownerUUID)) return;
 
-                color = (a << 24) | (r << 16) | (g << 8) | b;
+            float fadeFactor = 1.0f;
+            float fadeStart = concave ? 2900F : 900f;
+            float fadeEnd = concave ? 3000F : 1000F;
+
+            if (distance > fadeStart) {
+                if (distance >= fadeEnd) {
+                    fadeFactor = 0f;
+                } else {
+                    fadeFactor = 1.0f - (float)((distance - fadeStart) / (fadeEnd - fadeStart));
+                }
             }
 
-            drawContext.drawText(
-                    client.textRenderer,
-                    text,
-                    x - (client.textRenderer.getWidth(text) / 2), y + 60, color, true
-            );
+            text = Text.literal(signal.name + ": " + String.format("%.0f", distance) + "m").formatted(Formatting.BOLD);
+            Vec3i vec3i = signal.color;
+            int r  = vec3i.getX();
+            int g  = vec3i.getY();
+            int b  = vec3i.getZ();
+            int a = (int)(255 * fadeFactor);
+            a = Math.clamp(a, 0, 255);
+            color = (a << 24) | (r << 16) | (g << 8) | b;
+
+            if (distance < (concave ? 2998 : 998)){
+                drawContext.drawText(
+                        client.textRenderer,
+                        text,
+                        x - (client.textRenderer.getWidth(text) / 2), y + 60, color, true
+                );
+            }
         }
     }
 }

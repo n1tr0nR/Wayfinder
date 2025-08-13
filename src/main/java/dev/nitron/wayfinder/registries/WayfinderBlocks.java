@@ -7,6 +7,7 @@ import net.minecraft.block.AbstractBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BlockEntityType;
+import net.minecraft.block.piston.PistonBehavior;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.Item;
 import net.minecraft.registry.Registries;
@@ -21,7 +22,7 @@ public class WayfinderBlocks{
                 BlockEntityType.Builder.create(SignalArrayBlockEntity::new, SIGNAL_ARRAY).build());
     }
 
-    public static final Block SIGNAL_ARRAY = registerBlock("signal_array", new SignalArrayBlock(AbstractBlock.Settings.copy(Blocks.CRAFTER).nonOpaque()));
+    public static final Block SIGNAL_ARRAY = registerBlock("signal_array", new SignalArrayBlock(AbstractBlock.Settings.copy(Blocks.CRAFTER).nonOpaque().pistonBehavior(PistonBehavior.IGNORE)));
 
     public static Block registerBlock(String name, Block block){
         Registry.register(Registries.ITEM, Identifier.of(Wayfinder.MOD_ID, name), new BlockItem(block, new Item.Settings()));

@@ -16,7 +16,6 @@ repositories {
 		url = 'https://maven.ladysnake.org/releases'
 	}
 	maven {
-		name = "Modrinth"
 		url = "https://api.modrinth.com/maven"
 	}
 }
@@ -37,7 +36,10 @@ dependencies {
 	include(modImplementation "org.ladysnake.cardinal-components-api:cardinal-components-entity:${project.cca_version}")
 	include(modImplementation "org.ladysnake.cardinal-components-api:cardinal-components-world:${project.cca_version}")
 
-	include ( modImplementation ("maven.modrinth:nitrogen_rbn:${project.nitrogen_version}") )
+	modImplementation "maven.modrinth:nitrogen_rbn:${project.nitrogen_version}"
+	include(
+			modImplementation include ("maven.modrinth:midnightlib:${project.midnightlib_version}")
+	)
 }
 
 processResources {

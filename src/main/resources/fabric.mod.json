@@ -34,12 +34,12 @@
 		]
 	},
 	"depends": {
-		"fabricloader": ">=0.17.2",
+		"fabricloader": ">=0.16.4",
 		"minecraft": "~1.21.1",
 		"java": ">=21",
-		"fabric-api": "*"
-	},
-	"suggests": {
-		"another-mod": "*"
+		"fabric-api": "*",
+		"cardinal-components-entity": "*",
+		"cardinal-components-world": "*",
+		"nitrogen": "*"
 	}
 }

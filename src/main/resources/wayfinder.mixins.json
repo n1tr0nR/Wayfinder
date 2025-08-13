@@ -1,17 +1,19 @@
 {
-	"required": true,
-	"package": "dev.nitron.wayfinder.mixin",
-	"compatibilityLevel": "JAVA_21",
-	"mixins": [
-	],
-	"injectors": {
-		"defaultRequire": 1
-	},
-	"overwrites": {
-		"requireAnnotations": true
-	},
-	"client": [
-		"GameRendererMixin",
-		"WorldRendererMixin"
-	]
+  "required": true,
+  "package": "dev.nitron.wayfinder.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "overwrites": {
+    "requireAnnotations": true
+  },
+  "client": [
+    "GameRendererMixin",
+    "ItemRendererMixin",
+    "TextFieldWidgetMixin",
+    "WorldRendererMixin"
+  ]
 }

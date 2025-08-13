@@ -30,7 +30,6 @@ public class Signal1SoundInstance extends MovingSoundInstance {
     public void tick() {
         if (shouldPlay(this.player)){
             float raw = WayfinderComponents.WAYFINDER.get(player).getFactor1();
-            Wayfinder.LOGGER.info("fuck you " + raw);
             if (raw < 0.9F){
                 this.volume = 0;
             } else {

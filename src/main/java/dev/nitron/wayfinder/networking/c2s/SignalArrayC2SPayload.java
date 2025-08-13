@@ -2,6 +2,8 @@ package dev.nitron.wayfinder.networking.c2s;
 
 import dev.nitron.wayfinder.Wayfinder;
 import dev.nitron.wayfinder.block_entity.SignalArrayBlockEntity;
+import dev.nitron.wayfinder.cca.WayfinderWorldComponent;
+import dev.nitron.wayfinder.registries.WayfinderComponents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.block.entity.BlockEntity;
@@ -38,9 +40,24 @@ public record SignalArrayC2SPayload(String name, Vector3f color, int type, Block
         @Override
         public void receive(SignalArrayC2SPayload signalArrayC2SPayload, ServerPlayNetworking.Context context) {
             BlockEntity blockEntity = context.player().getWorld().getBlockEntity(signalArrayC2SPayload.pos);
-            if (blockEntity instanceof SignalArrayBlockEntity signalArrayBlockEntity){
-                signalArrayBlockEntity.update(signalArrayC2SPayload.name, new Vec3i((int) signalArrayC2SPayload.color.x, (int) signalArrayC2SPayload.color.y, (int) signalArrayC2SPayload.color.z), signalArrayC2SPayload.type);
+            if (blockEntity instanceof SignalArrayBlockEntity be) {
+                be.update(
+                        signalArrayC2SPayload.name,
+                        new Vec3i((int) signalArrayC2SPayload.color.x, (int) signalArrayC2SPayload.color.y, (int) signalArrayC2SPayload.color.z),
+                        signalArrayC2SPayload.type
+                );
+
+                WayfinderWorldComponent comp = WayfinderComponents.WAYFINDER_W.get(context.player().getWorld());
+
+                comp.updateSignal(
+                        be.getPos(),
+                        be.name,
+                        be.color,
+                        be.type,
+                        be.owner_uuid
+                );
             }
+
         }
     }
 }

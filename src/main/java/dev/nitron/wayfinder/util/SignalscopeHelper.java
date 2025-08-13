@@ -1,5 +1,6 @@
 package dev.nitron.wayfinder.util;
 
+import dev.nitron.wayfinder.cca.WayfinderWorldComponent;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
@@ -30,18 +31,21 @@ public class SignalscopeHelper {
     }
 
     @Nullable
-    public static BlockPos getLookedAtSignal(PlayerEntity player, List<BlockPos> signals, float maxAngle, double maxDistance){
+    public static BlockPos getLookedAtSignal(PlayerEntity player, List<WayfinderWorldComponent.SignalData> signals, float maxAngle, double maxDistance, boolean privacy) {
         Vec3d eyePos = player.getEyePos();
         Vec3d lookVec = player.getRotationVec(1.0F).normalize();
 
         BlockPos closestSignal = null;
         double closestAngle = Double.MAX_VALUE;
 
-        for (BlockPos signalPos : signals){
+        for (WayfinderWorldComponent.SignalData signalData : signals) {
+            BlockPos signalPos = signalData.pos;
+
             Vec3d targetVec = Vec3d.ofCenter(signalPos).subtract(eyePos);
             double distance = targetVec.length();
 
             if (distance > maxDistance) continue;
+            if (privacy && !player.getUuidAsString().equals(signalData.ownerUUID)) continue;
 
             targetVec = targetVec.normalize();
 
@@ -49,7 +53,7 @@ public class SignalscopeHelper {
             dot = MathHelper.clamp(dot, -1.0F, 1.0F);
             double angle = Math.acos(dot) * (180.0 / Math.PI);
 
-            if (angle <= maxAngle && angle < closestAngle){
+            if (angle <= maxAngle && angle < closestAngle) {
                 closestAngle = angle;
                 closestSignal = signalPos;
             }

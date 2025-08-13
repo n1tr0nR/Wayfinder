@@ -1,5 +1,6 @@
 package dev.nitron.wayfinder.block_entity;
 
+import dev.nitron.wayfinder.Wayfinder;
 import dev.nitron.wayfinder.registries.WayfinderBlocks;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -18,12 +19,21 @@ public class SignalArrayBlockEntity extends BlockEntity {
     public String name;
     public Vec3i color;
     public int type;
+    public String owner_uuid;
 
     public SignalArrayBlockEntity(BlockPos pos, BlockState state) {
         super(WayfinderBlocks.SIGNAL_ARRAY_BE, pos, state);
         this.name = "Signal";
         this.color = new Vec3i(76, 255, 135);
         this.type = 0;
+    }
+
+    public void setUuid(String uuid){
+        this.owner_uuid = uuid;
+        if (this.world != null) {
+            this.markDirty();
+            this.world.updateListeners(this.pos, this.getCachedState(), this.getCachedState(), Block.NOTIFY_ALL);
+        }
     }
 
     public void update(String name, Vec3i color, int type){
@@ -40,6 +50,7 @@ public class SignalArrayBlockEntity extends BlockEntity {
     protected void writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registryLookup) {
         super.writeNbt(nbt, registryLookup);
         nbt.putString("name", this.name);
+        nbt.putString("owner_uuid", this.owner_uuid);
         nbt.putInt("red", this.color.getX());
         nbt.putInt("green", this.color.getY());
         nbt.putInt("blue", this.color.getZ());
@@ -50,6 +61,7 @@ public class SignalArrayBlockEntity extends BlockEntity {
     protected void readNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registryLookup) {
         super.readNbt(nbt, registryLookup);
         this.name = nbt.getString("name");
+        this.owner_uuid = nbt.getString("owner_uuid");
         this.color = new Vec3i(nbt.getInt("red"), nbt.getInt("green"), nbt.getInt("blue"));
         this.type = nbt.getInt("type");
     }

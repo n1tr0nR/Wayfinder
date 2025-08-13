@@ -24,5 +24,17 @@
       "wayfinder:signalscope"
     ],
     "subtitle": "sounds.wayfinder.signalscope"
+  },
+  "take_lens": {
+    "sounds": [
+      "wayfinder:take_lens"
+    ],
+    "subtitle": "sounds.wayfinder.take_lens"
+  },
+  "place_lens": {
+    "sounds": [
+      "wayfinder:place_lens"
+    ],
+    "subtitle": "sounds.wayfinder.place_lens"
   }
 }
