@@ -44,20 +44,18 @@ public class Wayfinder implements ModInitializer {
 
 		ItemGroupEvents.modifyEntriesEvent(ItemGroups.TOOLS).register(entries -> {
 			entries.addBefore(Items.MAP, WayfinderItems.PRIVACY_LENS);
-			entries.addBefore(WayfinderItems.PRIVACY_LENS, WayfinderItems.CONCAVE_LENS);
-			entries.addBefore(WayfinderItems.CONCAVE_LENS, WayfinderItems.SIGNALSCOPE);
+			entries.addBefore(WayfinderItems.PRIVACY_LENS, WayfinderItems.VANTAGE_LENS);
+			entries.addBefore(WayfinderItems.VANTAGE_LENS, WayfinderItems.CONCAVE_LENS);
+			entries.addBefore(WayfinderItems.CONCAVE_LENS, WayfinderItems.TWISTED_LENS);
+			entries.addBefore(WayfinderItems.TWISTED_LENS, WayfinderItems.SIGNALSCOPE);
 		});
 
 		ItemGroupEvents.modifyEntriesEvent(ItemGroups.REDSTONE).register(entries -> {
 			entries.addBefore(Items.BELL, WayfinderBlocks.SIGNAL_ARRAY);
+			entries.addBefore(WayfinderBlocks.SIGNAL_ARRAY, WayfinderBlocks.SIGNAL_BEACON);
 		});
 
-		TooltipComponentCallback.EVENT.register(tooltipData -> {
-			if (tooltipData instanceof SignalscopeTooltipData(SignalscopeComponent contents)){
-				return new SignalscopeTooltipComponent(contents);
-			}
-			return null;
-		});
+
 	}
 
 	public static void grantAdvancement(PlayerEntity player, Identifier identifier, String criterion){

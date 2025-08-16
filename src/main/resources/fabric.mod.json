@@ -37,9 +37,6 @@
 		"fabricloader": ">=0.16.4",
 		"minecraft": "~1.21.1",
 		"java": ">=21",
-		"fabric-api": "*",
-		"cardinal-components-entity": "*",
-		"cardinal-components-world": "*",
-		"nitrogen": "*"
+		"fabric-api": "*"
 	}
 }

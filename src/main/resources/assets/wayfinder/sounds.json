@@ -19,6 +19,11 @@
       "wayfinder:signals/alt_signal_3"
     ]
   },
+  "distress": {
+    "sounds": [
+      "wayfinder:signals/distress"
+    ]
+  },
   "signalscope": {
     "sounds": [
       "wayfinder:signalscope"

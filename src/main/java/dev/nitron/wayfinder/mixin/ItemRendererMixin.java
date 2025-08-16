@@ -2,6 +2,8 @@ package dev.nitron.wayfinder.mixin;
 
 import dev.nitron.wayfinder.Wayfinder;
 import dev.nitron.wayfinder.item.SignalscopeItem;
+import dev.nitron.wayfinder.registries.WayfinderDataComponents;
+import dev.nitron.wayfinder.registries.WayfinderItems;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.item.ItemModels;
 import net.minecraft.client.render.item.ItemRenderer;
@@ -9,6 +11,7 @@ import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.client.render.model.json.ModelTransformationMode;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.util.Identifier;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -32,6 +35,27 @@ public class ItemRendererMixin {
     @ModifyVariable(method = "renderItem(Lnet/minecraft/item/ItemStack;Lnet/minecraft/client/render/model/json/ModelTransformationMode;ZLnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider;IILnet/minecraft/client/render/model/BakedModel;)V", at = @At("HEAD"), argsOnly = true)
     private BakedModel renderItem(BakedModel model, ItemStack stack, ModelTransformationMode renderMode, boolean leftHanded, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, int overlay, BakedModel modelAgain) {
         if (stack.getItem() instanceof SignalscopeItem){
+            if(stack.get(WayfinderDataComponents.SIGNALSCOPE_COMPONENT_COMPONENT_TYPE).item().isOf(WayfinderItems.PRIVACY_LENS)){
+                Identifier modelId = Identifier.of(Wayfinder.MOD_ID, "item/signalscope_privacy");
+                Identifier guiModelId = Identifier.of(Wayfinder.MOD_ID, "item/signalscope_privacy_gui");
+
+                return models.getModelManager().getModel(MODES.contains(renderMode) ? guiModelId : modelId);
+            }
+
+            if(stack.get(WayfinderDataComponents.SIGNALSCOPE_COMPONENT_COMPONENT_TYPE).item().isOf(WayfinderItems.VANTAGE_LENS)){
+                Identifier modelId = Identifier.of(Wayfinder.MOD_ID, "item/signalscope_vantage");
+                Identifier guiModelId = Identifier.of(Wayfinder.MOD_ID, "item/signalscope_vantage_gui");
+
+                return models.getModelManager().getModel(MODES.contains(renderMode) ? guiModelId : modelId);
+            }
+
+            if(stack.get(WayfinderDataComponents.SIGNALSCOPE_COMPONENT_COMPONENT_TYPE).item().isOf(WayfinderItems.TWISTED_LENS)){
+                Identifier modelId = Identifier.of(Wayfinder.MOD_ID, "item/signalscope_twisted");
+                Identifier guiModelId = Identifier.of(Wayfinder.MOD_ID, "item/signalscope_twisted_gui");
+
+                return models.getModelManager().getModel(MODES.contains(renderMode) ? guiModelId : modelId);
+            }
+
             Identifier modelId = Identifier.of(Wayfinder.MOD_ID, "item/signalscope");
             Identifier guiModelId = Identifier.of(Wayfinder.MOD_ID, "item/signalscope_gui");
 

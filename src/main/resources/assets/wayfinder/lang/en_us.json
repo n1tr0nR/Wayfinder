@@ -1,9 +1,12 @@
 {
   "item.wayfinder.signalscope": "Signalscope",
   "item.wayfinder.concave_lens": "Concave Lens",
+  "item.wayfinder.vantage_lens": "Vantage Lens",
   "item.wayfinder.privacy_lens": "Privacy Lens",
+  "item.wayfinder.twisted_lens": "Twisted Lens",
 
   "block.wayfinder.signal_array": "Signal Array",
+  "block.wayfinder.signal_beacon": "Signal Beacon",
 
   "sounds.wayfinder.signalscope": "Signalscope scans",
   "sounds.wayfinder.take_lens": "Lens disconnects",

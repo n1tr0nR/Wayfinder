@@ -56,7 +56,9 @@ public class SignalscopeHud implements HudRenderCallback {
         WayfinderWorldComponent comp = WayfinderComponents.WAYFINDER_W.get(client.world);
         boolean concave = client.player.getActiveItem().get(WayfinderDataComponents.SIGNALSCOPE_COMPONENT_COMPONENT_TYPE).item().isOf(WayfinderItems.CONCAVE_LENS);
         boolean privacy = client.player.getActiveItem().get(WayfinderDataComponents.SIGNALSCOPE_COMPONENT_COMPONENT_TYPE).item().isOf(WayfinderItems.PRIVACY_LENS);
-        BlockPos lookedAtSignal = SignalscopeHelper.getLookedAtSignal(client.player, comp.getSignalPositions(), 15.65F, concave ? 3000F : 1000F, privacy);
+        boolean vantage = client.player.getActiveItem().get(WayfinderDataComponents.SIGNALSCOPE_COMPONENT_COMPONENT_TYPE).item().isOf(WayfinderItems.VANTAGE_LENS);
+        boolean twisted = client.player.getActiveItem().get(WayfinderDataComponents.SIGNALSCOPE_COMPONENT_COMPONENT_TYPE).item().isOf(WayfinderItems.TWISTED_LENS);
+        BlockPos lookedAtSignal = SignalscopeHelper.getLookedAtSignal(client.player, comp.getSignalPositions(), 15.65F, concave ? 3000F : twisted ? 500F : 1000F, privacy, vantage, twisted);
 
         WayfinderWorldComponent.SignalData signal = comp.getSignalPositions().stream()
                 .filter(signalData -> signalData.pos.equals(lookedAtSignal))
@@ -69,6 +71,9 @@ public class SignalscopeHud implements HudRenderCallback {
             if (client.world.getBlockState(signalPos).contains(SignalArrayBlock.POWERED) && client.world.getBlockState(signalPos).get(SignalArrayBlock.POWERED) && !client.player.getUuidAsString().equals(signals.ownerUUID)) continue;
 
             if (privacy && !client.player.getUuidAsString().equals(signals.ownerUUID)) continue;
+            if (vantage && client.player.getUuidAsString().equals(signals.ownerUUID)) continue;
+            if (twisted && !signals.ownerUUID.equals("beacon")) continue;
+            if (!twisted && signals.ownerUUID.equals("beacon")) continue;
 
             float factor = (float) (1.0 - SignalscopeHelper.getLookFactor(
                     client.player,
@@ -93,8 +98,8 @@ public class SignalscopeHud implements HudRenderCallback {
             double distanceToSignal = client.player.getPos().distanceTo(Vec3d.ofCenter(signalPos));
 
             float fadeFactor = 1.0f;
-            float fadeStart = concave ? 2900F : 900f;
-            float fadeEnd = concave ? 3000F : 1000F;
+            float fadeStart = concave ? 2900F : twisted ? 450F : 900F;
+            float fadeEnd = concave ? 3000F : twisted ? 500F : 1000F;
 
             if (distanceToSignal > fadeStart) {
                 if (distanceToSignal >= fadeEnd) {
@@ -160,10 +165,13 @@ public class SignalscopeHud implements HudRenderCallback {
 
             if (blockState.contains(SignalArrayBlock.POWERED) && client.world.getBlockState(lookedAtSignal).get(SignalArrayBlock.POWERED) && !client.player.getUuidAsString().equals(signal.ownerUUID)) return;
             if (privacy && !client.player.getUuidAsString().equals(signal.ownerUUID)) return;
+            if (vantage && client.player.getUuidAsString().equals(signal.ownerUUID)) return;
+            if (twisted && !signal.ownerUUID.equals("beacon")) return;
+            if (!twisted && signal.ownerUUID.equals("beacon")) return;
 
             float fadeFactor = 1.0f;
-            float fadeStart = concave ? 2900F : 900f;
-            float fadeEnd = concave ? 3000F : 1000F;
+            float fadeStart = concave ? 2900F : twisted ? 450F : 900F;
+            float fadeEnd = concave ? 3000F : twisted ? 500F : 1000F;
 
             if (distance > fadeStart) {
                 if (distance >= fadeEnd) {
@@ -182,7 +190,7 @@ public class SignalscopeHud implements HudRenderCallback {
             a = Math.clamp(a, 0, 255);
             color = (a << 24) | (r << 16) | (g << 8) | b;
 
-            if (distance < (concave ? 2998 : 998)){
+            if (distance < (concave ? 2998 : twisted ? 498 : 998)){
                 drawContext.drawText(
                         client.textRenderer,
                         text,

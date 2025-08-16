@@ -4,6 +4,7 @@ import dev.nitron.wayfinder.Wayfinder;
 import dev.nitron.wayfinder.block.SignalArrayBlock;
 import dev.nitron.wayfinder.block_entity.SignalArrayBlockEntity;
 import dev.nitron.wayfinder.item.SignalscopeItem;
+import dev.nitron.wayfinder.registries.WayfinderBlocks;
 import dev.nitron.wayfinder.registries.WayfinderComponents;
 import dev.nitron.wayfinder.registries.WayfinderDataComponents;
 import dev.nitron.wayfinder.registries.WayfinderItems;
@@ -29,6 +30,7 @@ public class WayfinderEntityComponent implements AutoSyncedComponent, CommonTick
     private float factor1;
     private float factor2;
     private float factor3;
+    private float factor4;
 
     private float prevSignalscopeVolume = 1F;
     private float signalscopeVolume = 1F;
@@ -55,6 +57,9 @@ public class WayfinderEntityComponent implements AutoSyncedComponent, CommonTick
     public float getFactor3(){
         return this.factor3;
     }
+    public float getFactor4(){
+        return this.factor4;
+    }
 
     @Override
     public void tick() {
@@ -67,6 +72,7 @@ public class WayfinderEntityComponent implements AutoSyncedComponent, CommonTick
         float newFactor1 = 0f;
         float newFactor2 = 0f;
         float newFactor3 = 0f;
+        float newFactor4 = 0f;
 
         if (!signals.isEmpty()){
             for (WayfinderWorldComponent.SignalData signalData : signals){
@@ -77,9 +83,41 @@ public class WayfinderEntityComponent implements AutoSyncedComponent, CommonTick
                 if (player.getActiveItem().contains(WayfinderDataComponents.SIGNALSCOPE_COMPONENT_COMPONENT_TYPE)){
                     privacy = player.getActiveItem().get(WayfinderDataComponents.SIGNALSCOPE_COMPONENT_COMPONENT_TYPE).item().isOf(WayfinderItems.PRIVACY_LENS);
                 }
-                if ((!(be instanceof SignalArrayBlockEntity signalArrayBlockEntity)) || (this.player.getWorld().getBlockState(pos).get(SignalArrayBlock.POWERED) && !this.player.getUuidAsString().equals(signalArrayBlockEntity.owner_uuid))) continue;
+                boolean vantage = false;
+                if (player.getActiveItem().contains(WayfinderDataComponents.SIGNALSCOPE_COMPONENT_COMPONENT_TYPE)){
+                    vantage = player.getActiveItem().get(WayfinderDataComponents.SIGNALSCOPE_COMPONENT_COMPONENT_TYPE).item().isOf(WayfinderItems.VANTAGE_LENS);
+                }
+                boolean twisted = false;
+                if (player.getActiveItem().contains(WayfinderDataComponents.SIGNALSCOPE_COMPONENT_COMPONENT_TYPE)){
+                    twisted = player.getActiveItem().get(WayfinderDataComponents.SIGNALSCOPE_COMPONENT_COMPONENT_TYPE).item().isOf(WayfinderItems.TWISTED_LENS);
+                }
+                boolean isBeacon = player.getWorld().getBlockState(pos).isOf(WayfinderBlocks.SIGNAL_BEACON);
+                SignalArrayBlockEntity signalArrayBlockEntity =
+                        be instanceof SignalArrayBlockEntity sa ? sa : null;
+
+                if (signalArrayBlockEntity == null && !isBeacon) {
+                    continue;
+                }
+
+                if (signalArrayBlockEntity != null) {
+                    boolean powered = player.getWorld().getBlockState(pos).get(SignalArrayBlock.POWERED);
+                    if (powered && !player.getUuidAsString().equals(signalArrayBlockEntity.owner_uuid)) {
+                        continue;
+                    }
+                }
+
                 if (privacy &&  !this.player.getUuidAsString().equals(signalData.ownerUUID)) continue;
-                int type = signalArrayBlockEntity.type;
+                if (vantage &&  this.player.getUuidAsString().equals(signalData.ownerUUID)) continue;
+                if (twisted &&  !signalData.ownerUUID.equals("beacon")) continue;
+                if (!twisted &&  signalData.ownerUUID.equals("beacon")) continue;
+                int type;
+                if (signalArrayBlockEntity != null) {
+                    type = signalArrayBlockEntity.type;
+                } else {
+                    // beacon case
+                    type = 4;
+                }
+
                 float factor = (float) SignalscopeHelper.getLookFactor(
                         player,
                         pos,
@@ -90,14 +128,16 @@ public class WayfinderEntityComponent implements AutoSyncedComponent, CommonTick
                 if (player.getActiveItem().contains(WayfinderDataComponents.SIGNALSCOPE_COMPONENT_COMPONENT_TYPE)){
                     concave = player.getActiveItem().get(WayfinderDataComponents.SIGNALSCOPE_COMPONENT_COMPONENT_TYPE).item().isOf(WayfinderItems.CONCAVE_LENS);
                 }
-                if (distance < (concave ? 3000 : 1000)){
+                if (distance < (concave ? 3000 : twisted ? 500 : 1000)){
                     switch (type) {
                         case 0 -> newFactor0 = Math.max(newFactor0, factor);
                         case 1 -> newFactor1 = Math.max(newFactor1, factor);
                         case 2 -> newFactor2 = Math.max(newFactor2, factor);
                         case 3 -> newFactor3 = Math.max(newFactor3, factor);
+                        case 4 -> newFactor4 = Math.max(newFactor4, factor);
                         default -> {}
                     }
+
                 }
             }
         }
@@ -106,9 +146,9 @@ public class WayfinderEntityComponent implements AutoSyncedComponent, CommonTick
         this.factor1 = newFactor1;
         this.factor2 = newFactor2;
         this.factor3 = newFactor3;
+        this.factor4 = newFactor4;
         sync();
 
-        //TODO: Add an achievement for this!!
         if (this.factor0 == 1 && this.factor1 == 1 && this.factor2 == 1 && this.factor3 == 1 && this.signalscopeVolume >= 0.9){
             Wayfinder.grantAdvancement(this.player, Identifier.of(Wayfinder.MOD_ID, "let_the_choir_sing"), "incode");
         }
@@ -144,6 +184,7 @@ public class WayfinderEntityComponent implements AutoSyncedComponent, CommonTick
         this.factor1 = nbt.getFloat("factor1");
         this.factor2 = nbt.getFloat("factor2");
         this.factor3 = nbt.getFloat("factor3");
+        this.factor4 = nbt.getFloat("factor4");
         this.prevSignalscopeVolume = nbt.getFloat("prevSignalscopeVolume");
         this.signalscopeVolume = nbt.getFloat("signalscopeVolume");
     }
@@ -154,6 +195,7 @@ public class WayfinderEntityComponent implements AutoSyncedComponent, CommonTick
         nbt.putFloat("factor1", this.factor1);
         nbt.putFloat("factor2", this.factor2);
         nbt.putFloat("factor3", this.factor3);
+        nbt.putFloat("factor4", this.factor4);
         nbt.putFloat("prevSignalscopeVolume", this.prevSignalscopeVolume);
         nbt.putFloat("signalscopeVolume", this.signalscopeVolume);
     }

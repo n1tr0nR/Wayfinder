@@ -1,0 +1,14 @@
+{
+  "structures": [
+    {
+      "structure": "wayfinder:signal_tower",
+      "weight": 1
+    }
+  ],
+  "placement": {
+    "type": "random_spread",
+    "spacing": 60,
+    "separation": 1,
+    "salt": 60848502
+  }
+}

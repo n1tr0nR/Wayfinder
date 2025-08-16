@@ -13,6 +13,7 @@ public class WayfinderSounds {
     public static final SoundEvent ALT_SIGNAL_1 = registerSound("alt_signal_1");
     public static final SoundEvent ALT_SIGNAL_2 = registerSound("alt_signal_2");
     public static final SoundEvent ALT_SIGNAL_3 = registerSound("alt_signal_3");
+    public static final SoundEvent DISTRESS = registerSound("distress");
     public static final SoundEvent SIGNALSCOPE = registerSound("signalscope");
     public static final SoundEvent TAKE_LENS = registerSound("take_lens");
     public static final SoundEvent PLACE_LENS = registerSound("place_lens");

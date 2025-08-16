@@ -1,6 +1,9 @@
 package dev.nitron.wayfinder.util;
 
 import dev.nitron.wayfinder.cca.WayfinderWorldComponent;
+import dev.nitron.wayfinder.item.SignalscopeItem;
+import net.minecraft.client.model.ModelPart;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
@@ -31,7 +34,7 @@ public class SignalscopeHelper {
     }
 
     @Nullable
-    public static BlockPos getLookedAtSignal(PlayerEntity player, List<WayfinderWorldComponent.SignalData> signals, float maxAngle, double maxDistance, boolean privacy) {
+    public static BlockPos getLookedAtSignal(PlayerEntity player, List<WayfinderWorldComponent.SignalData> signals, float maxAngle, double maxDistance, boolean privacy, boolean vantage, boolean twisted) {
         Vec3d eyePos = player.getEyePos();
         Vec3d lookVec = player.getRotationVec(1.0F).normalize();
 
@@ -46,6 +49,9 @@ public class SignalscopeHelper {
 
             if (distance > maxDistance) continue;
             if (privacy && !player.getUuidAsString().equals(signalData.ownerUUID)) continue;
+            if (vantage && player.getUuidAsString().equals(signalData.ownerUUID)) continue;
+            if (twisted &&  !signalData.ownerUUID.equals("beacon")) continue;
+            if (!twisted &&  signalData.ownerUUID.equals("beacon")) continue;
 
             targetVec = targetVec.normalize();
 
@@ -60,5 +66,19 @@ public class SignalscopeHelper {
         }
 
         return closestSignal;
+    }
+
+    public static void positionRightArm(ModelPart head, LivingEntity entity, ModelPart rightArm){
+        if (entity.getActiveItem().getItem() instanceof SignalscopeItem){
+            rightArm.pitch = (float) (MathHelper.clamp(head.pitch - 1.9198622F - (entity.isInSneakingPose() ? 0.2617994F : 0.0F), -2.4F, 3.3F) - Math.toRadians(-30F));
+            rightArm.yaw = (float) (head.yaw - 0.2617994F - Math.toRadians(-15F));
+        }
+    }
+
+    public static void positionLeftArm(ModelPart head, LivingEntity entity, ModelPart leftArm){
+        if (entity.getActiveItem().getItem() instanceof SignalscopeItem){
+            leftArm.pitch = (float) (MathHelper.clamp(head.pitch - 1.9198622F - (entity.isInSneakingPose() ? 0.2617994F : 0.0F), -2.4F, 3.3F) - Math.toRadians(-30F));
+            leftArm.yaw = (float) (head.yaw - 0.2617994F - Math.toRadians(-15F));
+        }
     }
 }

@@ -1,10 +1,7 @@
 package dev.nitron.wayfinder.mixin;
 
 
-import dev.nitron.wayfinder.client.sound.Signal0SoundInstance;
-import dev.nitron.wayfinder.client.sound.Signal1SoundInstance;
-import dev.nitron.wayfinder.client.sound.Signal2SoundInstance;
-import dev.nitron.wayfinder.client.sound.Signal3SoundInstance;
+import dev.nitron.wayfinder.client.sound.*;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.render.WorldRenderer;
@@ -33,6 +30,9 @@ public abstract class WorldRendererMixin {
     @Unique
     SoundInstance alt_3;
 
+    @Unique
+    SoundInstance alt_4;
+
 
     @Inject(method = "tick", at = @At("HEAD"))
     public void solitude$playSoundAmbiances(CallbackInfo ci) {
@@ -55,6 +55,11 @@ public abstract class WorldRendererMixin {
         if (player != null && Signal3SoundInstance.shouldPlay(player) && (this.alt_3 == null || !this.client.getSoundManager().isPlaying(this.alt_3))) {
             this.alt_3 = new Signal3SoundInstance(player);
             this.client.getSoundManager().play(this.alt_3);
+        }
+
+        if (player != null && Signal4SoundInstance.shouldPlay(player) && (this.alt_4 == null || !this.client.getSoundManager().isPlaying(this.alt_4))) {
+            this.alt_4 = new Signal4SoundInstance(player);
+            this.client.getSoundManager().play(this.alt_4);
         }
     }
 }

@@ -7,6 +7,8 @@ import dev.nitron.wayfinder.item.tooltip.SignalscopeTooltipData;
 import dev.nitron.wayfinder.registries.WayfinderDataComponents;
 import dev.nitron.wayfinder.registries.WayfinderItems;
 import dev.nitron.wayfinder.registries.WayfinderSounds;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -115,16 +117,19 @@ public class SignalscopeItem extends Item implements ColorableItem {
         return super.getName(stack).copy().withColor(0xf7db70);
     }
 
+    @Environment(EnvType.CLIENT)
     @Override
     public int startColor(ItemStack itemStack) {
         return 0xFF752d07;
     }
 
+    @Environment(EnvType.CLIENT)
     @Override
     public int endColor(ItemStack itemStack) {
         return 0xFF591804;
     }
 
+    @Environment(EnvType.CLIENT)
     @Override
     public int backgroundColor(ItemStack itemStack) {
         return 0xF0140502;
