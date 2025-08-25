@@ -1,0 +1,18 @@
+{
+  "item.wayfinder.signalscope": "シグナルスコープ",
+  "item.wayfinder.concave_lens": "凹レンズ",
+  "item.wayfinder.vantage_lens": "展望レンズ",
+  "item.wayfinder.privacy_lens": "プライバシーレンズ",
+  "item.wayfinder.twisted_lens": "歪んだレンズ",
+
+  "block.wayfinder.signal_array": "シグナルアレイ",
+  "block.wayfinder.signal_beacon": "シグナルビーコン",
+
+  "sounds.wayfinder.signalscope": "シグナルスコープの走査",
+  "sounds.wayfinder.take_lens": "レンズを取り外す",
+  "sounds.wayfinder.place_lens": "レンズを取り付ける",
+
+  "advancement.wayfinder.a_plus_hearing": "シグナルスコープを使う",
+  "advancement.wayfinder.personal_vpn": "プライベートなシグナルネットワークを築く",
+  "advancement.wayfinder.let_the_choir_sing": "4種類の異なるシグナルを同時に聞く"
+}
