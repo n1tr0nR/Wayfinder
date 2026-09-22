@@ -1,26 +1,26 @@
 {
-    "type": "minecraft:crafting_shaped",
-    "pattern": [
-        " # ",
-        "gNg",
-        "gRg"
-    ],
-    "key": {
-        "#": {
-            "item": "minecraft:calibrated_sculk_sensor"
-        },
-        "g": {
-            "item": "minecraft:gold_ingot"
-        },
-        "N": {
-            "item": "minecraft:note_block"
-        },
-        "R": {
-            "item": "minecraft:redstone"
-        }
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "  #",
+    "gWg",
+    "ccc"
+  ],
+  "key": {
+    "#": {
+      "item": "minecraft:gold_nugget"
     },
-    "result": {
-        "id": "wayfinder:signal_array",
-        "count": 1
+    "g": {
+      "item": "minecraft:gold_ingot"
+    },
+    "W": {
+      "item": "minecraft:calibrated_sculk_sensor"
+    },
+    "c": {
+      "item": "minecraft:copper_ingot"
     }
+  },
+  "result": {
+    "id": "wayfinder:signal_array",
+    "count": 1
+  }
 }

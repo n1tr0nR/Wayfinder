@@ -1,91 +1,137 @@
 plugins {
-	id 'fabric-loom' version "${loom_version}"
-	id 'maven-publish'
+    id 'java-library'
+    id 'maven-publish'
+    id 'net.neoforged.moddev' version '2.0.147'
+    id 'idea'
 }
 
-version = project.mod_version
-group = project.maven_group
+version = mod_version
+group = mod_group_id
+base { archivesName = mod_id }
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 
-base {
-	archivesName = project.archives_base_name
+neoForge {
+    version = project.neo_version
+    runs {
+        client { client() }
+        server { server(); programArgument '--nogui' }
+        configureEach { logLevel = org.slf4j.event.Level.INFO }
+    }
+    mods { "${mod_id}" { sourceSet(sourceSets.main) } }
 }
 
-repositories {
-	maven {
-		name = "Ladysnake Mods"
-		url = 'https://maven.ladysnake.org/releases'
-	}
-	maven {
-		url = "https://api.modrinth.com/maven"
-	}
+def upstreamJarUrl = 'https://cdn.modrinth.com/data/L6vc46Id/versions/ZcMxbJVR/wayfinder-3.5-fabric.1.21.10.jar'
+def upstreamJarSha256 = '59daf0993c42f9877f3183518530e10760264fc1279d13da7e61bb3396833f3d'
+def upstreamJar = layout.buildDirectory.file('upstream-wayfinder/wayfinder-fabric.jar')
+def upstreamResources = layout.buildDirectory.dir('upstream-wayfinder/resources')
+
+tasks.register('prepareUpstreamAssets') {
+    inputs.property 'upstreamJarUrl', upstreamJarUrl
+    inputs.property 'upstreamJarSha256', upstreamJarSha256
+    outputs.dir(upstreamResources)
+    doLast {
+        def jarFile = upstreamJar.get().asFile
+        jarFile.parentFile.mkdirs()
+        if (!jarFile.exists()) {
+            logger.lifecycle('Downloading upstream Wayfinder 3.5 assets from Modrinth...')
+            new URI(upstreamJarUrl).toURL().withInputStream { input ->
+                jarFile.withOutputStream { output -> output << input }
+            }
+        }
+        def digest = java.security.MessageDigest.getInstance('SHA-256')
+        def actualHash = digest.digest(jarFile.bytes).encodeHex().toString()
+        if (actualHash != upstreamJarSha256) {
+            throw new GradleException("Unexpected upstream Wayfinder JAR SHA-256: ${actualHash}")
+        }
+        def out = upstreamResources.get().asFile
+        delete(out)
+        copy {
+            from zipTree(jarFile)
+            include 'assets/wayfinder/**'
+            include 'data/wayfinder/**'
+            exclude 'data/wayfinder/recipe/**'
+            include 'data/minecraft/tags/block/mineable/pickaxe.json'
+            include 'data/minecraft/tags/block/needs_iron_tool.json'
+            into out
+        }
+    }
 }
 
-fabricApi {
-	configureDataGeneration {
-		client = true
-	}
+sourceSets.main.resources.srcDir(upstreamResources)
+tasks.named('processResources').configure { dependsOn tasks.named('prepareUpstreamAssets') }
+
+var generateModMetadata = tasks.register('generateModMetadata', ProcessResources) {
+    var replaceProperties = [
+        minecraft_version: minecraft_version,
+        minecraft_version_range: minecraft_version_range,
+        neo_version: neo_version,
+        loader_version_range: loader_version_range,
+        mod_id: mod_id,
+        mod_name: mod_name,
+        mod_license: mod_license,
+        mod_version: mod_version,
+    ]
+    inputs.properties replaceProperties
+    expand replaceProperties
+    from 'src/main/templates'
+    into 'build/generated/sources/modMetadata'
+}
+sourceSets.main.resources.srcDir generateModMetadata
+neoForge.ideSyncTask generateModMetadata
+tasks.withType(JavaCompile).configureEach { options.encoding = 'UTF-8' }
+
+sourceSets { renderingTest }
+sourceSets.renderingTest.compileClasspath += sourceSets.main.output
+sourceSets.renderingTest.runtimeClasspath += sourceSets.main.output
+
+tasks.register('renderingRegressionTest', JavaExec) {
+    dependsOn tasks.named('renderingTestClasses')
+    classpath = sourceSets.renderingTest.runtimeClasspath
+    mainClass = 'dev.nitron.wayfinder.client.RenderingRegressionTest'
+    javaLauncher = javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(21) }
+}
+tasks.named('check').configure { dependsOn tasks.named('renderingRegressionTest') }
+
+// Test-only mod: exercises actual Minecraft rendering, without OS input automation.
+sourceSets { clientTest }
+sourceSets.clientTest.compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
+sourceSets.clientTest.runtimeClasspath += sourceSets.main.output + sourceSets.main.runtimeClasspath
+neoForge.mods {
+    wayfinder_tests { sourceSet sourceSets.clientTest }
+}
+neoForge.runs {
+    configureEach { loadedMods = [neoForge.mods.wayfinder] }
+    clientValidation {
+        client()
+        sourceSet = sourceSets.clientTest
+        loadedMods = [neoForge.mods.wayfinder, neoForge.mods.wayfinder_tests]
+        gameDirectory = layout.buildDirectory.dir('client-validation')
+        programArguments.addAll('--width', '1280', '--height', '960')
+    }
 }
 
-dependencies {
-	minecraft "com.mojang:minecraft:${project.minecraft_version}"
-	mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
-	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
-	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
-
-	include(modImplementation "org.ladysnake.cardinal-components-api:cardinal-components-base:${project.cca_version}")
-	include(modImplementation "org.ladysnake.cardinal-components-api:cardinal-components-entity:${project.cca_version}")
-	include(modImplementation "org.ladysnake.cardinal-components-api:cardinal-components-world:${project.cca_version}")
-
-	modImplementation "maven.modrinth:nitrogen_rbn:${project.nitrogen_version}"
-	include(
-			modImplementation include ("maven.modrinth:midnightlib:${project.midnightlib_version}")
-	)
+tasks.register('prepareClientValidationWorld') {
+    doLast {
+        def directory = layout.buildDirectory.dir('client-validation').get().asFile
+        delete(new File(directory, 'saves/wayfinder-validation'))
+        delete(new File(directory, 'screenshots'))
+        delete(new File(directory, 'validation.txt'))
+        directory.mkdirs()
+        new File(directory, 'options.txt').text = '''onboardAccessibility:false
+renderDistance:4
+simulationDistance:5
+maxFps:60
+pauseOnLostFocus:false
+tutorialStep:none
+'''
+    }
 }
-
-processResources {
-	inputs.property "version", project.version
-
-	filesMatching("fabric.mod.json") {
-		expand "version": inputs.properties.version
-	}
-}
-
-tasks.withType(JavaCompile).configureEach {
-	it.options.release = 21
-}
-
-java {
-	// Loom will automatically attach sourcesJar to a RemapSourcesJar task and to the "build" task
-	// if it is present.
-	// If you remove this line, sources will not be generated.
-	withSourcesJar()
-
-	sourceCompatibility = JavaVersion.VERSION_21
-	targetCompatibility = JavaVersion.VERSION_21
-}
-
-jar {
-	inputs.property "archivesName", project.base.archivesName
-
-	from("LICENSE") {
-		rename { "${it}_${inputs.properties.archivesName}"}
-	}
-}
-
-// configure the maven publication
-publishing {
-	publications {
-		create("mavenJava", MavenPublication) {
-			artifactId = project.archives_base_name
-			from components.java
-		}
-	}
-
-	// See https://docs.gradle.org/current/userguide/publishing_maven.html for information on how to set up publishing.
-	repositories {
-		// Add repositories to publish to here.
-		// Notice: This block does NOT have the same function as the block in the top level.
-		// The repositories here will be used for publishing your artifact, not for
-		// retrieving dependencies.
-	}
+tasks.named('runClientValidation').configure {
+    dependsOn tasks.named('prepareClientValidationWorld')
+    doLast {
+        def result = layout.buildDirectory.file('client-validation/validation.txt').get().asFile
+        if (!result.exists() || !result.text.startsWith('PASS ')) {
+            throw new GradleException(result.exists() ? result.text : 'Client validation did not finish')
+        }
+    }
 }

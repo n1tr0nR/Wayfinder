@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "###",
+    "#W#",
+    "###"
+  ],
+  "key": {
+    "#": {
+      "item": "minecraft:twisting_vines"
+    },
+    "W": {
+      "item": "wayfinder:signal_booster"
+    }
+  },
+  "result": {
+    "id": "wayfinder:signal_expander",
+    "count": 1
+  }
+}

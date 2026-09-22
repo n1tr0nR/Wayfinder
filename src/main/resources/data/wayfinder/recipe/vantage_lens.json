@@ -1,20 +1,23 @@
 {
-    "type": "minecraft:crafting_shaped",
-    "pattern": [
-        " ##",
-        "#T#",
-        "## "
-    ],
-    "key": {
-        "#": {
-            "item": "minecraft:glass"
-        },
-        "T": {
-            "item": "minecraft:emerald"
-        }
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " # ",
+    "RWR",
+    " # "
+  ],
+  "key": {
+    "#": {
+      "item": "minecraft:emerald"
     },
-    "result": {
-        "id": "wayfinder:vantage_lens",
-        "count": 1
+    "R": {
+      "item": "minecraft:redstone"
+    },
+    "W": {
+      "item": "wayfinder:lens"
     }
+  },
+  "result": {
+    "id": "wayfinder:vantage_lens",
+    "count": 1
+  }
 }

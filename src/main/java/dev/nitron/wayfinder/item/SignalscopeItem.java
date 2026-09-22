@@ -1,136 +1,240 @@
 package dev.nitron.wayfinder.item;
 
-import com.nitron.nitrogen.util.interfaces.ColorableItem;
-import dev.nitron.wayfinder.Wayfinder;
 import dev.nitron.wayfinder.item.component.SignalscopeComponent;
-import dev.nitron.wayfinder.item.tooltip.SignalscopeTooltipData;
-import dev.nitron.wayfinder.registries.WayfinderDataComponents;
-import dev.nitron.wayfinder.registries.WayfinderSounds;
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.inventory.StackReference;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.ItemUsage;
-import net.minecraft.item.tooltip.TooltipData;
-import net.minecraft.item.tooltip.TooltipType;
-import net.minecraft.screen.slot.Slot;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.stat.Stats;
-import net.minecraft.text.Text;
-import net.minecraft.util.*;
-import net.minecraft.world.World;
+import dev.nitron.wayfinder.registry.WayfinderDataComponents;
+import dev.nitron.wayfinder.registry.WayfinderItems;
+import dev.nitron.wayfinder.registry.WayfinderSounds;
+import net.minecraft.network.chat.Component;
+import net.minecraft.sounds.SoundEvent;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.entity.SlotAccess;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.ClickAction;
+import net.minecraft.world.inventory.ResultSlot;
+import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 
-import java.util.List;
-import java.util.Optional;
+public final class SignalscopeItem extends Item {
+    public SignalscopeItem(Properties properties) {
+        super(properties.stacksTo(1));
+    }
 
-public class SignalscopeItem extends Item implements ColorableItem {
-    public SignalscopeItem(Settings settings) {
-        super(settings);
+    public static SignalscopeComponent component(ItemStack stack) {
+        return stack.get(WayfinderDataComponents.SIGNALSCOPE.get());
+    }
+
+    private static boolean lens(ItemStack stack) {
+        return stack.is(WayfinderItems.LENS.get())
+                || stack.is(WayfinderItems.PRIVACY_LENS.get())
+                || stack.is(WayfinderItems.VANTAGE_LENS.get());
+    }
+
+    private static boolean upgrade(ItemStack stack) {
+        return stack.is(WayfinderItems.SIGNAL_BOOSTER.get())
+                || stack.is(WayfinderItems.SIGNAL_EXPANDER.get());
     }
 
     @Override
-    public TypedActionResult<ItemStack> use(World world, PlayerEntity user, Hand hand) {
-        user.playSound(SoundEvents.ITEM_SPYGLASS_USE, 1.0F, 1.0F);
-        Wayfinder.grantAdvancement(user, Identifier.of(Wayfinder.MOD_ID, "a_plus_hearing"), "incode");
-        user.playSound(WayfinderSounds.SIGNALSCOPE, 0.5F, 0.9F + (world.getRandom().nextFloat() * 0.2F));
-        user.incrementStat(Stats.USED.getOrCreateStat(this));
-        return ItemUsage.consumeHeldItem(world, user, hand);
-    }
+    public boolean overrideOtherStackedOnMe(
+            ItemStack scope,
+            ItemStack carried,
+            Slot slot,
+            ClickAction action,
+            Player player,
+            SlotAccess carriedAccess) {
+        SignalscopeComponent component = component(scope);
 
-    @Override
-    public boolean onClicked(ItemStack stack, ItemStack otherStack, Slot slot, ClickType clickType, PlayerEntity player, StackReference cursorStackReference) {
-        SignalscopeComponent component = stack.get(WayfinderDataComponents.SIGNALSCOPE_COMPONENT_COMPONENT_TYPE);
-        if (clickType == ClickType.RIGHT) {
-            if (component.item().isEmpty() && otherStack.getItem() instanceof LensItem){
-                ItemStack inserted = otherStack.copyWithCount(1);
-                player.playSoundToPlayer(WayfinderSounds.PLACE_LENS, SoundCategory.PLAYERS, 1.0F, 1.0F);
-                stack.set(WayfinderDataComponents.SIGNALSCOPE_COMPONENT_COMPONENT_TYPE, new SignalscopeComponent(inserted));
-                otherStack.decrement(1);
-                return true;
-            }
-            if (!component.item().isEmpty() && cursorStackReference.get().isEmpty()) {
-                cursorStackReference.set(component.item().copy());
-                player.playSoundToPlayer(WayfinderSounds.TAKE_LENS, SoundCategory.PLAYERS, 1.0F, 1.0F);
-                stack.set(WayfinderDataComponents.SIGNALSCOPE_COMPONENT_COMPONENT_TYPE, new SignalscopeComponent(ItemStack.EMPTY));
-                return true;
-            }
+        if (action != ClickAction.SECONDARY || component == null) {
+            return super.overrideOtherStackedOnMe(
+                    scope, carried, slot, action, player, carriedAccess);
         }
-        return super.onClicked(stack, otherStack, slot, clickType, player, cursorStackReference);
-    }
 
-    @Override
-    public Optional<TooltipData> getTooltipData(ItemStack stack) {
-        if (stack.contains(WayfinderDataComponents.SIGNALSCOPE_COMPONENT_COMPONENT_TYPE)) {
-            SignalscopeComponent component = stack.get(WayfinderDataComponents.SIGNALSCOPE_COMPONENT_COMPONENT_TYPE);
-            return Optional.of(new SignalscopeTooltipData(component));
+        // Editing a recipe preview bypasses ResultSlot.onTake and ingredient consumption.
+        if (slot instanceof ResultSlot) {
+            return super.overrideOtherStackedOnMe(
+                    scope, carried, slot, action, player, carriedAccess);
         }
-        return super.getTooltipData(stack);
-    }
 
-    @Override
-    public boolean allowComponentsUpdateAnimation(PlayerEntity player, Hand hand, ItemStack oldStack, ItemStack newStack) {
-        return false;
-    }
+        ItemStack oldLens = component.lensItemstack();
+        ItemStack oldUpgrade = component.upgradeItemstack();
+        boolean upgradeSelected = component.selected() == 2;
 
-    public int getMaxUseTime(ItemStack stack, LivingEntity user) {
-        return 1200;
-    }
+        if (oldLens.isEmpty() && lens(carried)) {
+            ItemStack inserted = carried.copy();
+            inserted.setCount(1);
 
-    public UseAction getUseAction(ItemStack stack) {
-        return UseAction.SPYGLASS;
-    }
+            scope.set(
+                    WayfinderDataComponents.SIGNALSCOPE.get(),
+                    new SignalscopeComponent(
+                            component.frequency(),
+                            component.gain(),
+                            inserted,
+                            oldUpgrade.isEmpty()
+                                    ? ItemStack.EMPTY
+                                    : oldUpgrade.copy(),
+                            1));
 
-    public ItemStack finishUsing(ItemStack stack, World world, LivingEntity user) {
-        this.playStopUsingSound(user);
-        return stack;
-    }
+            carried.shrink(1);
+            sound(player, WayfinderSounds.PLACE_LENS.get());
+            return true;
+        }
 
-    public void onStoppedUsing(ItemStack stack, World world, LivingEntity user, int remainingUseTicks) {
-        this.playStopUsingSound(user);
-    }
+        if (!oldLens.isEmpty() && lens(carried)) {
+            ItemStack inserted = carried.copy();
+            inserted.setCount(1);
 
-    private void playStopUsingSound(LivingEntity user) {
-        user.playSound(SoundEvents.ITEM_SPYGLASS_STOP_USING, 1.0F, 1.0F);
-    }
+            scope.set(
+                    WayfinderDataComponents.SIGNALSCOPE.get(),
+                    new SignalscopeComponent(
+                            component.frequency(),
+                            component.gain(),
+                            inserted,
+                            oldUpgrade.isEmpty()
+                                    ? ItemStack.EMPTY
+                                    : oldUpgrade.copy(),
+                            1));
 
-    @Override
-    public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
-        if (Screen.hasShiftDown()){
-            tooltip.add(Text.literal("Hold down [").append(Text.literal("Shift").withColor(0xf7db70)).append("] for details.").formatted(Formatting.DARK_GRAY));
-            tooltip.add(Text.literal(" "));
-            tooltip.add(Text.literal("Can be used to track down ").formatted(Formatting.GRAY));
-            tooltip.add(Text.literal("signal placed by other players, ").formatted(Formatting.GRAY));
-            tooltip.add(Text.literal("using a ").append(Text.literal("Signal Array").formatted(Formatting.BOLD).withColor(0xf7db70)).append(Text.literal(".")).formatted(Formatting.GRAY));
+            carried.shrink(1);
+            carriedAccess.set(oldLens.copy());
+            sound(player, WayfinderSounds.PLACE_LENS.get());
+            return true;
+        }
+
+        if (!oldLens.isEmpty() && carried.isEmpty() && !upgradeSelected) {
+            carriedAccess.set(oldLens.copy());
+
+            scope.set(
+                    WayfinderDataComponents.SIGNALSCOPE.get(),
+                    new SignalscopeComponent(
+                            component.frequency(),
+                            component.gain(),
+                            ItemStack.EMPTY,
+                            oldUpgrade.isEmpty()
+                                    ? ItemStack.EMPTY
+                                    : oldUpgrade.copy(),
+                            oldUpgrade.isEmpty() ? 0 : 2));
+
+            sound(player, WayfinderSounds.TAKE_LENS.get());
+            return true;
+        }
+
+        if (oldUpgrade.isEmpty() && upgrade(carried)) {
+            ItemStack inserted = carried.copy();
+            inserted.setCount(1);
+
+            scope.set(
+                    WayfinderDataComponents.SIGNALSCOPE.get(),
+                    new SignalscopeComponent(
+                            component.frequency(),
+                            component.gain(),
+                            oldLens.isEmpty()
+                                    ? ItemStack.EMPTY
+                                    : oldLens.copy(),
+                            inserted,
+                            2));
+
+            carried.shrink(1);
+            sound(player, WayfinderSounds.PLACE_LENS.get());
+            return true;
+        }
+
+        if (!oldUpgrade.isEmpty() && upgrade(carried)) {
+            ItemStack inserted = carried.copy();
+            inserted.setCount(1);
+
+            scope.set(
+                    WayfinderDataComponents.SIGNALSCOPE.get(),
+                    new SignalscopeComponent(
+                            component.frequency(),
+                            component.gain(),
+                            oldLens.isEmpty()
+                                    ? ItemStack.EMPTY
+                                    : oldLens.copy(),
+                            inserted,
+                            2));
+
+            carried.shrink(1);
+            carriedAccess.set(oldUpgrade.copy());
+            sound(player, WayfinderSounds.PLACE_LENS.get());
+            return true;
+        }
+
+        if (!oldUpgrade.isEmpty() && carried.isEmpty() && upgradeSelected) {
+            carriedAccess.set(oldUpgrade.copy());
+
+            scope.set(
+                    WayfinderDataComponents.SIGNALSCOPE.get(),
+                    new SignalscopeComponent(
+                            component.frequency(),
+                            component.gain(),
+                            oldLens.isEmpty()
+                                    ? ItemStack.EMPTY
+                                    : oldLens.copy(),
+                            ItemStack.EMPTY,
+                            oldLens.isEmpty() ? 0 : 1));
+
+            sound(player, WayfinderSounds.TAKE_LENS.get());
+            return true;
+        }
+
+        if (!oldLens.isEmpty()) {
+            scope.set(
+                    WayfinderDataComponents.SIGNALSCOPE.get(),
+                    new SignalscopeComponent(
+                            component.frequency(),
+                            component.gain(),
+                            oldLens.copy(),
+                            oldUpgrade.isEmpty()
+                                    ? ItemStack.EMPTY
+                                    : oldUpgrade.copy(),
+                            1));
+        } else if (!oldUpgrade.isEmpty()) {
+            scope.set(
+                    WayfinderDataComponents.SIGNALSCOPE.get(),
+                    new SignalscopeComponent(
+                            component.frequency(),
+                            component.gain(),
+                            ItemStack.EMPTY,
+                            oldUpgrade.copy(),
+                            2));
         } else {
-            tooltip.add(Text.literal("Hold down [").append(Text.literal("Shift").formatted(Formatting.GRAY)).append("] for details.").formatted(Formatting.DARK_GRAY));
+            scope.set(
+                    WayfinderDataComponents.SIGNALSCOPE.get(),
+                    new SignalscopeComponent(
+                            component.frequency(),
+                            component.gain(),
+                            ItemStack.EMPTY,
+                            ItemStack.EMPTY,
+                            0));
+        }
+
+        return super.overrideOtherStackedOnMe(
+                scope, carried, slot, action, player, carriedAccess);
+    }
+
+    private static void sound(Player player, SoundEvent sound) {
+        if (player.level().isClientSide) {
+            player.playNotifySound(
+                    sound,
+                    SoundSource.PLAYERS,
+                    1.0F,
+                    1.0F);
         }
     }
 
     @Override
-    public Text getName(ItemStack stack) {
-        return super.getName(stack).copy().withColor(0xf7db70);
+    public Component getName(ItemStack stack) {
+        return super.getName(stack)
+                .copy()
+                .withStyle(style -> style.withColor(16243568));
     }
 
-    @Environment(EnvType.CLIENT)
     @Override
-    public int startColor(ItemStack itemStack) {
-        return 0xFF752d07;
-    }
-
-    @Environment(EnvType.CLIENT)
-    @Override
-    public int endColor(ItemStack itemStack) {
-        return 0xFF591804;
-    }
-
-    @Environment(EnvType.CLIENT)
-    @Override
-    public int backgroundColor(ItemStack itemStack) {
-        return 0xF0140502;
+    public boolean shouldCauseReequipAnimation(
+            ItemStack oldStack,
+            ItemStack newStack,
+            boolean slotChanged) {
+        return !oldStack.is(newStack.getItem());
     }
 }

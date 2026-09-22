@@ -1,0 +1,9 @@
+modLoader="javafml"
+loaderVersion="[1,)"
+license="All Rights Reserved"
+[[mods]]
+modId="wayfinder_tests"
+version="1"
+displayName="Wayfinder rendering tests"
+[[mixins]]
+config="wayfinder-tests.mixins.json"
