@@ -1,82 +1,41 @@
 package dev.nitron.wayfinder.mixin;
 
+import com.mojang.blaze3d.vertex.PoseStack;
 import dev.nitron.wayfinder.Wayfinder;
-import dev.nitron.wayfinder.item.LifeformAnalyzerItem;
 import dev.nitron.wayfinder.item.SignalscopeItem;
-import dev.nitron.wayfinder.item.WayfindersCompass;
-import dev.nitron.wayfinder.registries.WayfinderDataComponents;
-import dev.nitron.wayfinder.registries.WayfinderItems;
-import net.minecraft.client.render.VertexConsumerProvider;
-import net.minecraft.client.render.item.ItemModels;
-import net.minecraft.client.render.item.ItemRenderer;
-import net.minecraft.client.render.model.BakedModel;
-import net.minecraft.client.render.model.json.ModelTransformationMode;
-import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.util.Identifier;
+import dev.nitron.wayfinder.item.component.SignalscopeComponent;
+import dev.nitron.wayfinder.registry.WayfinderDataComponents;
+import dev.nitron.wayfinder.registry.WayfinderItems;
+import net.minecraft.client.renderer.ItemModelShaper;
+import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.entity.ItemRenderer;
+import net.minecraft.client.resources.model.BakedModel;
+import net.minecraft.client.resources.model.ModelResourceLocation;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemDisplayContext;
+import net.minecraft.world.item.ItemStack;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
-import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 
-import java.util.List;
-
 @Mixin(ItemRenderer.class)
-public class ItemRendererMixin {
-
-    @Shadow @Final private ItemModels models;
-    @Unique
-    private static final List<ModelTransformationMode> MODES = List.of(
-            ModelTransformationMode.GROUND,
-            ModelTransformationMode.GUI
-    );
-
-    @ModifyVariable(method = "renderItem(Lnet/minecraft/item/ItemStack;Lnet/minecraft/client/render/model/json/ModelTransformationMode;ZLnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider;IILnet/minecraft/client/render/model/BakedModel;)V", at = @At("HEAD"), argsOnly = true)
-    private BakedModel renderItem(BakedModel model, ItemStack stack, ModelTransformationMode renderMode, boolean leftHanded, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, int overlay, BakedModel modelAgain) {
-        if (stack.getItem() instanceof WayfindersCompass){
-            Identifier closedModelId = Identifier.of(Wayfinder.MOD_ID, "item/wayfinders_compass_closed");
-
-            return !stack.get(WayfinderDataComponents.WAYFINDERS_COMPASS_COMPONENT_COMPONENT_TYPE).open() ? models.getModelManager().getModel(closedModelId) : model;
-        }
-
-        if (stack.getItem() instanceof SignalscopeItem){
-            if(stack.get(WayfinderDataComponents.SIGNALSCOPE_COMPONENT_COMPONENT_TYPE).item().isOf(WayfinderItems.PRIVACY_LENS)){
-                Identifier modelId = Identifier.of(Wayfinder.MOD_ID, "item/signalscope_privacy");
-                Identifier guiModelId = Identifier.of(Wayfinder.MOD_ID, "item/signalscope_privacy_gui");
-
-                return models.getModelManager().getModel(MODES.contains(renderMode) ? guiModelId : modelId);
-            }
-
-            if(stack.get(WayfinderDataComponents.SIGNALSCOPE_COMPONENT_COMPONENT_TYPE).item().isOf(WayfinderItems.VANTAGE_LENS)){
-                Identifier modelId = Identifier.of(Wayfinder.MOD_ID, "item/signalscope_vantage");
-                Identifier guiModelId = Identifier.of(Wayfinder.MOD_ID, "item/signalscope_vantage_gui");
-
-                return models.getModelManager().getModel(MODES.contains(renderMode) ? guiModelId : modelId);
-            }
-
-            if(stack.get(WayfinderDataComponents.SIGNALSCOPE_COMPONENT_COMPONENT_TYPE).item().isOf(WayfinderItems.TWISTED_LENS)){
-                Identifier modelId = Identifier.of(Wayfinder.MOD_ID, "item/signalscope_twisted");
-                Identifier guiModelId = Identifier.of(Wayfinder.MOD_ID, "item/signalscope_twisted_gui");
-
-                return models.getModelManager().getModel(MODES.contains(renderMode) ? guiModelId : modelId);
-            }
-
-            Identifier modelId = Identifier.of(Wayfinder.MOD_ID, "item/signalscope");
-            Identifier guiModelId = Identifier.of(Wayfinder.MOD_ID, "item/signalscope_gui");
-
-            return models.getModelManager().getModel(MODES.contains(renderMode) ? guiModelId : modelId);
-        }
-
-        if (stack.getItem() instanceof LifeformAnalyzerItem){
-            Identifier modelId = Identifier.of(Wayfinder.MOD_ID, "item/lifeform_analyzer");
-            Identifier guiModelId = Identifier.of(Wayfinder.MOD_ID, "item/lifeform_analyzer_gui");
-
-            return models.getModelManager().getModel(MODES.contains(renderMode) ? guiModelId : modelId);
-        }
-
-        return model;
+public abstract class ItemRendererMixin {
+    @Shadow @Final private ItemModelShaper itemModelShaper;
+    @ModifyVariable(
+            method = "render(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/item/ItemDisplayContext;ZLcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;IILnet/minecraft/client/resources/model/BakedModel;)V",
+            at = @At("HEAD"),
+            ordinal = 0,
+            argsOnly = true)
+    private BakedModel wayfinder$selectModel(BakedModel original,ItemStack stack,ItemDisplayContext context,boolean leftHanded,
+                                             PoseStack poseStack,MultiBufferSource buffer,int light,int overlay){
+        if(!(stack.getItem() instanceof SignalscopeItem))return original;
+        SignalscopeComponent c=stack.get(WayfinderDataComponents.SIGNALSCOPE.get());if(c==null)return original;
+        String lens=c.lensItemstack().isEmpty()?"_empty":c.lensItemstack().is(WayfinderItems.PRIVACY_LENS.get())?"_privacy":c.lensItemstack().is(WayfinderItems.VANTAGE_LENS.get())?"_vantage":"";
+        String upgrade=c.upgradeItemstack().is(WayfinderItems.SIGNAL_BOOSTER.get())?"_b":c.upgradeItemstack().is(WayfinderItems.SIGNAL_EXPANDER.get())?"_e":"";
+        boolean gui=context==ItemDisplayContext.GUI||context==ItemDisplayContext.GROUND||context==ItemDisplayContext.FIXED;
+        String path=gui?"item/signalscope/gui/gui_signalscope"+lens+upgrade:"item/signalscope/hand/signalscope"+lens+upgrade;
+        return itemModelShaper.getModelManager().getModel(ModelResourceLocation.standalone(ResourceLocation.fromNamespaceAndPath(Wayfinder.MOD_ID,path)));
     }
 }

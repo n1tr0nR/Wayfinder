@@ -1,26 +1,29 @@
 {
-    "type": "minecraft:crafting_shaped",
-    "pattern": [
-        " #g",
-        "RS ",
-        "gR "
-    ],
-    "key": {
-        "#": {
-            "item": "minecraft:calibrated_sculk_sensor"
-        },
-        "g": {
-            "item": "minecraft:gold_ingot"
-        },
-        "R": {
-            "item": "minecraft:redstone"
-        },
-        "S": {
-            "item": "minecraft:spyglass"
-        }
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " #W",
+    "RS ",
+    "gR "
+  ],
+  "key": {
+    "#": {
+      "item": "minecraft:calibrated_sculk_sensor"
     },
-    "result": {
-        "id": "wayfinder:signalscope",
-        "count": 1
+    "W": {
+      "item": "wayfinder:lens"
+    },
+    "R": {
+      "item": "minecraft:redstone"
+    },
+    "S": {
+      "item": "minecraft:spyglass"
+    },
+    "g": {
+      "item": "minecraft:gold_ingot"
     }
+  },
+  "result": {
+    "id": "wayfinder:signalscope",
+    "count": 1
+  }
 }

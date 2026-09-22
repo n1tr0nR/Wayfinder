@@ -2,19 +2,11 @@
   "required": true,
   "package": "dev.nitron.wayfinder.mixin",
   "compatibilityLevel": "JAVA_21",
-  "mixins": [
+  "client": [
+    "InGameHudMixin",
+    "ItemRendererMixin"
   ],
   "injectors": {
     "defaultRequire": 1
-  },
-  "overwrites": {
-    "requireAnnotations": true
-  },
-  "client": [
-    "BipedEntityModelMixin",
-    "GameRendererMixin",
-    "ItemRendererMixin",
-    "TextFieldWidgetMixin",
-    "WorldRendererMixin"
-  ]
+  }
 }

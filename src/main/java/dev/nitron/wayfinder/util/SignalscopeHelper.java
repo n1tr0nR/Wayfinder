@@ -1,85 +1,51 @@
 package dev.nitron.wayfinder.util;
 
-import dev.nitron.wayfinder.cca.WayfinderWorldComponent;
-import dev.nitron.wayfinder.item.SignalscopeItem;
-import net.minecraft.client.model.ModelPart;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Vec3d;
-import org.jetbrains.annotations.Nullable;
-
+import dev.nitron.wayfinder.item.component.SignalscopeComponent;
+import dev.nitron.wayfinder.registry.WayfinderDataComponents;
+import dev.nitron.wayfinder.registry.WayfinderItems;
+import dev.nitron.wayfinder.signal.SignalRecord;
+import net.minecraft.core.BlockPos;
+import net.minecraft.util.Mth;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.phys.Vec3;
 import java.util.List;
 
-public class SignalscopeHelper {
-    public static float getLookFactor(PlayerEntity player, BlockPos target, float maxAngle, float tickDelta){
-        Vec3d eyePosition = player.getEyePos();
-        Vec3d lookDirection = player.getRotationVec(tickDelta).normalize();
-        Vec3d targetDir = Vec3d.ofCenter(target).subtract(eyePosition).normalize();
-        double dot = lookDirection.dotProduct(targetDir);
-        if (dot <= 0){
-            return 0.0F; //return because its behind the player.
-        }
-
-        double maxAngleRad = Math.toRadians(maxAngle);
-        double minDot = Math.cos(maxAngleRad);
-
-        double factor = (dot - minDot) / (1.0F - minDot);
-        float clamped = (float) MathHelper.clamp(factor, 0.0, 1.0);
-        if (clamped > 0.95){
-            return 1.0F;
-        }
-        return clamped;
+public final class SignalscopeHelper {
+    public static final float TRACKING_ANGLE = 75.0F, IDENTIFY_ANGLE = 15.65F;
+    public static float lookFactor(Player p, BlockPos target, float max, float partial) {
+        Vec3 eye=p.getEyePosition(), look=p.getViewVector(partial).normalize(), direction=Vec3.atLowerCornerOf(target).subtract(eye).normalize();
+        double dot=look.dot(direction); if(dot<=0) return 0;
+        double min=Math.cos(Math.toRadians(max));
+        float f=(float)Mth.clamp((dot-min)/(1-min),0.0D,1.0D);
+        return f>0.95F?1.0F:f;
     }
-
-    @Nullable
-    public static BlockPos getLookedAtSignal(PlayerEntity player, List<WayfinderWorldComponent.SignalData> signals, float maxAngle, double maxDistance, boolean privacy, boolean vantage, boolean twisted) {
-        Vec3d eyePos = player.getEyePos();
-        Vec3d lookVec = player.getRotationVec(1.0F).normalize();
-
-        BlockPos closestSignal = null;
-        double closestAngle = Double.MAX_VALUE;
-
-        for (WayfinderWorldComponent.SignalData signalData : signals) {
-            BlockPos signalPos = signalData.pos;
-
-            Vec3d targetVec = Vec3d.ofCenter(signalPos).subtract(eyePos);
-            double distance = targetVec.length();
-
-            if (distance > maxDistance) continue;
-            if (signalData.isPowered && !player.getUuidAsString().equals(signalData.ownerUUID)) continue;
-            if (privacy && !player.getUuidAsString().equals(signalData.ownerUUID)) continue;
-            if (vantage && player.getUuidAsString().equals(signalData.ownerUUID)) continue;
-            if (twisted &&  !signalData.ownerUUID.equals("beacon")) continue;
-            if (!twisted &&  signalData.ownerUUID.equals("beacon")) continue;
-
-            targetVec = targetVec.normalize();
-
-            double dot = lookVec.dotProduct(targetVec);
-            dot = MathHelper.clamp(dot, -1.0F, 1.0F);
-            double angle = Math.acos(dot) * (180.0 / Math.PI);
-
-            if (angle <= maxAngle && angle < closestAngle) {
-                closestAngle = angle;
-                closestSignal = signalPos;
-            }
-        }
-
-        return closestSignal;
+    public static SignalscopeComponent component(ItemStack s){ return s.get(WayfinderDataComponents.SIGNALSCOPE.get()); }
+    public static boolean canShowSignal(Player p, SignalRecord s, SignalscopeComponent c){
+        if(c==null||c.frequency()!=s.frequency()) return false;
+        if(c.lensItemstack().is(WayfinderItems.VANTAGE_LENS.get())&&s.owner().equals(p.getUUID())) return false;
+        if(c.lensItemstack().is(WayfinderItems.PRIVACY_LENS.get())&&!s.owner().equals(p.getUUID())) return false;
+        return true;
     }
-
-    public static void positionRightArm(ModelPart head, LivingEntity entity, ModelPart rightArm){
-        if (entity.getActiveItem().getItem() instanceof SignalscopeItem){
-            rightArm.pitch = (float) (MathHelper.clamp(head.pitch - 1.9198622F - (entity.isInSneakingPose() ? 0.2617994F : 0.0F), -2.4F, 3.3F) - Math.toRadians(-30F));
-            rightArm.yaw = (float) (head.yaw - 0.2617994F - Math.toRadians(-15F));
-        }
+    public static boolean accepts(Player p, SignalRecord s, ItemStack scope){
+        SignalscopeComponent c=component(scope);
+        return c!=null&&!c.lensItemstack().isEmpty()&&(!s.powered()||p.getUUID().equals(s.owner()))&&canShowSignal(p,s,c);
     }
-
-    public static void positionLeftArm(ModelPart head, LivingEntity entity, ModelPart leftArm){
-        if (entity.getActiveItem().getItem() instanceof SignalscopeItem){
-            leftArm.pitch = (float) (MathHelper.clamp(head.pitch - 1.9198622F - (entity.isInSneakingPose() ? 0.2617994F : 0.0F), -2.4F, 3.3F) - Math.toRadians(-30F));
-            leftArm.yaw = (float) (head.yaw - 0.2617994F - Math.toRadians(-15F));
-        }
+    public static double maxDistance(SignalscopeComponent c){
+        int base=c.upgradeItemstack().is(WayfinderItems.SIGNAL_EXPANDER.get())?500:c.upgradeItemstack().is(WayfinderItems.SIGNAL_BOOSTER.get())?300:200;
+        return base*((c.gain()-20.0D)/2.0D);
     }
+    public static double maxDistance(ItemStack s){ SignalscopeComponent c=component(s); return c==null?0:maxDistance(c); }
+    public static double distance(Player p, SignalRecord s){ return p.position().distanceTo(Vec3.atLowerCornerOf(s.pos())); }
+    public static BlockPos lookedAtSignal(Player p,List<SignalRecord> signals,float maxAngle,double maxDistance,SignalscopeComponent c){
+        Vec3 eye=p.getEyePosition(),look=p.getViewVector(1.0F).normalize(); BlockPos closest=null; double best=Double.MAX_VALUE;
+        for(SignalRecord s:signals){
+            Vec3 target=Vec3.atLowerCornerOf(s.pos()).subtract(eye); double distance=target.length();
+            if(distance>maxDistance||s.powered()&&!p.getUUID().equals(s.owner())||!canShowSignal(p,s,c)||c.lensItemstack().isEmpty())continue;
+            double angle=Math.acos(Mth.clamp(look.dot(target.normalize()),-1.0D,1.0D))*57.29577951308232D;
+            if(angle<=maxAngle&&angle<best){best=angle;closest=s.pos();}
+        }
+        return closest;
+    }
+    private SignalscopeHelper(){}
 }

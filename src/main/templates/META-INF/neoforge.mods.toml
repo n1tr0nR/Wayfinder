@@ -1,0 +1,33 @@
+modLoader="javafml"
+loaderVersion="${loader_version_range}"
+license="${mod_license}"
+
+[[mods]]
+modId="${mod_id}"
+version="${mod_version}"
+displayName="${mod_name}"
+displayURL="https://modrinth.com/mod/wayfinder_rbn"
+authors="Nitron; unofficial personal NeoForge compatibility port"
+description='''
+Unofficial NeoForge 1.21.1 compatibility backport of Wayfinder 3.5.
+Functionality and assets are pinned to the Wayfinder 3.5 Fabric 1.21.10 JAR.
+No Fabric API, Cardinal Components or other external mod runtime dependency.
+Original project and assets are copyright Nitron and remain All Rights Reserved.
+'''
+
+[[dependencies.${mod_id}]]
+modId="neoforge"
+type="required"
+versionRange="[${neo_version},)"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.${mod_id}]]
+modId="minecraft"
+type="required"
+versionRange="${minecraft_version_range}"
+ordering="NONE"
+side="BOTH"
+
+[[mixins]]
+config="wayfinder.mixins.json"

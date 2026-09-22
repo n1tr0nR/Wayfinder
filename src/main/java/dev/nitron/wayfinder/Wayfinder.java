@@ -1,67 +1,117 @@
 package dev.nitron.wayfinder;
 
-import com.nitron.nitrogen.Nitrogen;
-import dev.nitron.wayfinder.item.component.SignalscopeComponent;
-import dev.nitron.wayfinder.item.tooltip.SignalscopeTooltipComponent;
-import dev.nitron.wayfinder.item.tooltip.SignalscopeTooltipData;
-import dev.nitron.wayfinder.networking.c2s.SignalArrayC2SPayload;
-import dev.nitron.wayfinder.registries.WayfinderBlocks;
-import dev.nitron.wayfinder.registries.WayfinderDataComponents;
-import dev.nitron.wayfinder.registries.WayfinderItems;
-import dev.nitron.wayfinder.registries.WayfinderSounds;
-import net.fabricmc.api.ModInitializer;
+import dev.nitron.wayfinder.command.WayfinderCommands;
+import dev.nitron.wayfinder.network.WayfinderNetwork;
+import dev.nitron.wayfinder.registry.*;
+import dev.nitron.wayfinder.signal.PlayerSignalTracker;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.CreativeModeTab;
+import net.minecraft.world.item.CreativeModeTabs;
+import net.minecraft.world.item.Items;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
+import net.neoforged.neoforge.event.RegisterCommandsEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 
-import net.fabricmc.fabric.api.client.rendering.v1.TooltipComponentCallback;
-import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
-import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
-import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
-import net.minecraft.advancement.AdvancementEntry;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.ItemGroups;
-import net.minecraft.item.Items;
-import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.util.Identifier;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+@Mod(Wayfinder.MOD_ID)
+public final class Wayfinder {
+    public static final String MOD_ID = "wayfinder";
 
-public class Wayfinder implements ModInitializer {
-	public static final String MOD_ID = "wayfinder";
+    public Wayfinder(IEventBus modBus) {
+        WayfinderDataComponents.DATA_COMPONENTS.register(modBus);
+        WayfinderBlocks.BLOCKS.register(modBus);
+        WayfinderItems.ITEMS.register(modBus);
+        WayfinderBlockEntities.BLOCK_ENTITIES.register(modBus);
+        WayfinderSounds.SOUNDS.register(modBus);
 
-	public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
+        modBus.addListener(WayfinderNetwork::registerPayloads);
+        modBus.addListener(Wayfinder::buildCreativeTabs);
 
-	@Override
-	public void onInitialize() {
-		WayfinderItems.init();
-		WayfinderBlocks.init();
-		WayfinderSounds.init();
-		WayfinderDataComponents.init();
+        NeoForge.EVENT_BUS.addListener(Wayfinder::onPlayerTick);
+        NeoForge.EVENT_BUS.addListener(WayfinderNetwork::onPlayerLogin);
+        NeoForge.EVENT_BUS.addListener(WayfinderNetwork::onPlayerChangedDimension);
+        NeoForge.EVENT_BUS.addListener(Wayfinder::onPlayerLogout);
+        NeoForge.EVENT_BUS.addListener(Wayfinder::onPlayerClone);
+        NeoForge.EVENT_BUS.addListener(Wayfinder::registerCommands);
+    }
 
-		Nitrogen.registerNitronMod(MOD_ID);
+    private static void registerCommands(RegisterCommandsEvent event) {
+        WayfinderCommands.register(
+                event.getDispatcher(),
+                event.getBuildContext(),
+                event.getCommandSelection());
+    }
 
-		PayloadTypeRegistry.playC2S().register(SignalArrayC2SPayload.ID, SignalArrayC2SPayload.CODEC);
-		ServerPlayNetworking.registerGlobalReceiver(SignalArrayC2SPayload.ID, new SignalArrayC2SPayload.Receiver());
+    private static void onPlayerTick(PlayerTickEvent.Post event) {
+        if (event.getEntity() instanceof ServerPlayer player) {
+            PlayerSignalTracker.tick(player);
+        }
+    }
 
-		ItemGroupEvents.modifyEntriesEvent(ItemGroups.TOOLS).register(entries -> {
-			entries.addBefore(Items.MAP, WayfinderItems.PRIVACY_LENS);
-			entries.addBefore(WayfinderItems.PRIVACY_LENS, WayfinderItems.VANTAGE_LENS);
-			entries.addBefore(WayfinderItems.VANTAGE_LENS, WayfinderItems.CONCAVE_LENS);
-			entries.addBefore(WayfinderItems.CONCAVE_LENS, WayfinderItems.TWISTED_LENS);
-			entries.addBefore(WayfinderItems.TWISTED_LENS, WayfinderItems.SIGNALSCOPE);
-			entries.addBefore(Items.COMPASS, WayfinderItems.WAYFINDERS_COMPASS);
-		});
+    private static void onPlayerLogout(PlayerEvent.PlayerLoggedOutEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) {
+            PlayerSignalTracker.remove(player);
+        }
+    }
 
-		ItemGroupEvents.modifyEntriesEvent(ItemGroups.REDSTONE).register(entries -> {
-			entries.addBefore(Items.BELL, WayfinderBlocks.SIGNAL_ARRAY);
-			entries.addBefore(WayfinderBlocks.SIGNAL_ARRAY, WayfinderBlocks.SIGNAL_BEACON);
-		});
-	}
+    private static void onPlayerClone(PlayerEvent.Clone event) {
+        if (event.getEntity() instanceof ServerPlayer player) {
+            PlayerSignalTracker.resetForClone(player);
+        }
+    }
 
-	public static void grantAdvancement(PlayerEntity player, Identifier identifier, String criterion){
-		if (!(player instanceof ServerPlayerEntity serverPlayer)) return;
-		MinecraftServer server = serverPlayer.getServer();
-		if (server == null) return;
-		AdvancementEntry advancement = server.getAdvancementLoader().get(identifier);
-		serverPlayer.getAdvancementTracker().grantCriterion(advancement, criterion);
-	}
+    public static void grantAdvancement(Player player, ResourceLocation id, String criterion) {
+        if (!(player instanceof ServerPlayer serverPlayer)) return;
+        var advancement = serverPlayer.getServer().getAdvancements().get(id);
+        if (advancement != null) {
+            serverPlayer.getAdvancements().award(advancement, criterion);
+        }
+    }
+
+    private static void buildCreativeTabs(BuildCreativeModeTabContentsEvent event) {
+        var visibility = CreativeModeTab.TabVisibility.PARENT_AND_SEARCH_TABS;
+
+        if (event.getTabKey() == CreativeModeTabs.TOOLS_AND_UTILITIES) {
+            event.insertAfter(
+                    Items.SPYGLASS.getDefaultInstance(),
+                    WayfinderItems.SIGNALSCOPE.get().getDefaultInstance(),
+                    visibility);
+            event.insertAfter(
+                    WayfinderItems.SIGNALSCOPE.get().getDefaultInstance(),
+                    WayfinderItems.SIGNAL_TWEAKER.get().getDefaultInstance(),
+                    visibility);
+            event.insertAfter(
+                    WayfinderItems.SIGNAL_TWEAKER.get().getDefaultInstance(),
+                    WayfinderItems.SIGNAL_BOOSTER.get().getDefaultInstance(),
+                    visibility);
+            event.insertAfter(
+                    WayfinderItems.SIGNAL_BOOSTER.get().getDefaultInstance(),
+                    WayfinderItems.SIGNAL_EXPANDER.get().getDefaultInstance(),
+                    visibility);
+            event.insertAfter(
+                    WayfinderItems.SIGNAL_EXPANDER.get().getDefaultInstance(),
+                    WayfinderItems.LENS.get().getDefaultInstance(),
+                    visibility);
+            event.insertAfter(
+                    WayfinderItems.LENS.get().getDefaultInstance(),
+                    WayfinderItems.PRIVACY_LENS.get().getDefaultInstance(),
+                    visibility);
+            event.insertAfter(
+                    WayfinderItems.PRIVACY_LENS.get().getDefaultInstance(),
+                    WayfinderItems.VANTAGE_LENS.get().getDefaultInstance(),
+                    visibility);
+        }
+
+        if (event.getTabKey() == CreativeModeTabs.REDSTONE_BLOCKS) {
+            event.insertAfter(
+                    Items.CALIBRATED_SCULK_SENSOR.getDefaultInstance(),
+                    WayfinderItems.SIGNAL_ARRAY.get().getDefaultInstance(),
+                    visibility);
+        }
+    }
 }
